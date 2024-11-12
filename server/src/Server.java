@@ -1,29 +1,56 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Server implements Runnable {
-    private final ExecutorService pool;
     private final ServerSocket serverSocket;
+    private final ExecutorService pool;
+    private final ConcurrentHashMap<ConnectionHandler, Boolean> activeConnections;
+    private final String name;
+    private final ArrayList<String> bannedPhrases;
     private final Logger logger;
     private volatile boolean isRunning;
-    private final ConcurrentHashMap<ConnectionHandler, Boolean> activeConnections;
 
-    public Server(int port, int nThreads) throws IllegalArgumentException, IOException {
-        this.pool = Executors.newFixedThreadPool(nThreads);
-        this.serverSocket = new ServerSocket(port);
+    public Server(String configPath) throws IllegalArgumentException, IOException {
+        Properties props = new Properties();
+        try (InputStream in = new FileInputStream(configPath)) {
+            props.load(in);
+        }
+        this.serverSocket = new ServerSocket(Integer.parseInt(props.getProperty("port")));
+        this.pool = Executors.newFixedThreadPool(Integer.parseInt(props.getProperty("nThreads")));
+        this.activeConnections = new ConcurrentHashMap<>();
+        this.name = props.getProperty("name");
+        this.bannedPhrases = parseBannedPhrases(props.getProperty("bannedPhrases", ""));
         this.logger = Logger.getInstance();
         this.isRunning = false;
-        this.activeConnections = new ConcurrentHashMap<>();
+    }
+
+    private ArrayList<String> parseBannedPhrases(String str) {
+        ArrayList<String> bannedPhrases = new ArrayList<>();
+        Pattern p = Pattern.compile("\"([^\"]*)\"|\\b(\\w+)\\b");
+        Matcher m = p.matcher(str);
+
+        while (m.find()) {
+            if (m.group(1) != null) {
+                bannedPhrases.add(m.group(1));
+            } else if (m.group(2) != null) {
+                bannedPhrases.add(m.group(2));
+            }
+        }
+        return bannedPhrases;
     }
 
     @Override
     public void run() {
         logger.info(Thread.currentThread().getName() + " started running.");
-        logger.info("Listening on port: " + serverSocket.getLocalPort());
+        logger.info(name + " is listening on port: " + serverSocket.getLocalPort());
         isRunning = true;
         while (isRunning) {
             try {

@@ -75,7 +75,7 @@ public class Main {
         synchronized (lock) {
             if (serverThread == null || !serverThread.isAlive()){
                 try {
-                    server = new Server(25575, 10);
+                    server = new Server("server/server.properties");
                     serverThread = new Thread(server, "Server thread");
                     serverThread.start();
                 } catch (IllegalArgumentException | IOException e) {
