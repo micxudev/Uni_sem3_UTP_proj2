@@ -54,9 +54,9 @@ public class Server implements Runnable {
         isRunning = true;
         while (isRunning) {
             try {
-                Socket connectionSocket = serverSocket.accept();
+                Socket socket = serverSocket.accept();
 
-                ConnectionHandler handler = new ConnectionHandler(connectionSocket, this);
+                ConnectionHandler handler = new ConnectionHandler(socket, this);
                 activeConnections.put(handler, true);
                 pool.execute(handler);
 
@@ -98,7 +98,7 @@ public class Server implements Runnable {
 
     public void sendMessageIfActive(String ip, String message) {
         for (ConnectionHandler handler : activeConnections.keySet()) {
-            if (handler.getConnectionSocket().getInetAddress().getHostAddress().equals(ip)) {
+            if (handler.getSocket().getInetAddress().getHostAddress().equals(ip)) {
                 handler.sendMessage(message, false);
                 return;
             }
