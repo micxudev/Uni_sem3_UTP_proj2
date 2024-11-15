@@ -1,5 +1,5 @@
 Types of messages to users
-type: connection, message
+type: connection, message, banlist
 
 connection - notify all active users about connection change
 type: connection\n
@@ -14,3 +14,7 @@ messageLine2\n
 ...
 message last line\n
 \0\0
+
+banlist - send a list of banned phrases in one line
+type: banlist\n
+bannedPhrasesStr\n
