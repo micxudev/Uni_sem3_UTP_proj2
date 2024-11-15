@@ -17,6 +17,7 @@ public class Server implements Runnable {
     private final ConcurrentHashMap<String, ConnectionHandler> activeConnections;
     private final String name;
     private final HashSet<String> bannedPhrases;
+    private final String bannedPhrasesStr;
     private final Logger logger;
     private volatile boolean isRunning;
     enum CONNECTION_ACTION { ADDED, REMOVED }
@@ -33,6 +34,7 @@ public class Server implements Runnable {
         this.activeConnections = new ConcurrentHashMap<>();
         this.name = props.getProperty("name", "Server");
         this.bannedPhrases = parseBannedPhrases(props.getProperty("bannedPhrases", ""));
+        this.bannedPhrasesStr = String.join(",", bannedPhrases) + '\n';
         this.logger = Logger.getInstance();
     }
 
@@ -144,5 +146,9 @@ public class Server implements Runnable {
 
     public HashSet<String> getBannedPhrases() {
         return bannedPhrases;
+    }
+
+    public String getBannedPhrasesStr() {
+        return bannedPhrasesStr;
     }
 }
