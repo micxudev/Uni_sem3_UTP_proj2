@@ -1,11 +1,15 @@
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
 
 public class ConnectionHandler implements Runnable {
     private final Socket socket;
-    private final Logger logger;
     private final Server server;
+    private final Logger logger;
+    private String username;
+    private String logUsername;
+    private PrintWriter out;
 
     public ConnectionHandler(Socket socket, Server server) {
         this.socket = socket;
@@ -15,65 +19,101 @@ public class ConnectionHandler implements Runnable {
 
     @Override
     public void run() {
-        logger.info("Run new connection: " + socket.getRemoteSocketAddress());
-
-        try (DataInputStream in = new DataInputStream(socket.getInputStream())) {
+        logger.info("Run validation for: " + socket.getRemoteSocketAddress());
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+            out = new PrintWriter(socket.getOutputStream(), true);
+            // validation
             while (true) {
-                try {
-                    int msgLen = in.readInt();
-
-                    if (msgLen <= 0) {
-                        logger.warn(socket.getRemoteSocketAddress() + " sent invalid message length: " + msgLen + ". Disconnecting...");
+                username = in.readLine();
+                if (username == null) {
+                    throw new IOException("connection closed before valid username received");
+                }
+                logUsername = username + " (" + socket.getRemoteSocketAddress() + ") ";
+                if (!server.isValidUsername(username)) {
+                    sendMessage("username is invalid");
+                    logger.info(logUsername + "tried to connect with invalid username");
+                    continue;
+                }
+                if (server.isTakenUsername(username)) {
+                    sendMessage("username is taken");
+                    logger.info(logUsername + "tried to connect with name taken");
+                    continue;
+                }
+                break;
+            }
+            logger.info(logUsername + "passed validation");
+            server.addUserToActive(username, this);
+            // start reading messages
+            HashSet<String> bannedPhrases = server.getBannedPhrases();
+            logger.info("Started reading messages from" + logUsername);
+            while (true) {
+                StringBuilder message = new StringBuilder();
+                boolean containedBannedPhrase = false;
+                String line;
+                // read lines until: 1. !banned 2. end-of-message signal or 3. banned phrase is encountered
+                while ((line = in.readLine()) != null) {
+                    if (line.equals("!banned")) {
+                        sendMessage(server.getBannedPhrasesStr());
                         break;
                     }
-
-                    int BUF_CAP = 4096;
-
-                    if (msgLen > BUF_CAP) {
-                        byte[] buffer = new byte[BUF_CAP];
-
-                        for (int i = 0, fullChunks = msgLen / BUF_CAP; i < fullChunks; i++) {
-                            in.readFully(buffer);
-                            String chunkMessage = new String(buffer, StandardCharsets.UTF_8);
-                            System.out.println("[" + socket.getRemoteSocketAddress() + " CHUNK " + (i + 1) + "]:\n" + chunkMessage);
-                        }
-
-                        int leftovers = msgLen % BUF_CAP;
-                        if (leftovers > 0) {
-                            byte[] leftoversBuffer = new byte[leftovers];
-                            in.readFully(leftoversBuffer);
-                            String finalMessage = new String(leftoversBuffer, StandardCharsets.UTF_8);
-                            System.out.println("[" + socket.getRemoteSocketAddress() + " FINAL CHUNK]:\n" + finalMessage);
-                        }
-                    } else {
-                        byte[] buffer = new byte[msgLen];
-                        in.readFully(buffer);
-                        String message = new String(buffer, StandardCharsets.UTF_8);
-                        System.out.println("[" + socket.getRemoteSocketAddress() + " SAYS]:\n" + message);
+                    if (line.equals("\0\0")) {
+                        break; // end-of-message signal
                     }
-                } catch (EOFException e) {
-                    logger.info(socket.getRemoteSocketAddress() + " disconnected.");
-                    break;
+                    for (String bannedPhrase : bannedPhrases) {
+                        if (line.contains(bannedPhrase)) {
+                            sendMessage("Your message contains a banned phrase. Use !banned to see banned phrases");
+                            containedBannedPhrase = true;
+                            break;
+                        }
+                    }
+                    if (containedBannedPhrase) {
+                        logger.info(logUsername + "sent a message with a banned phrase");
+                        break;
+                    }
+                    message.append(line).append("\n");
                 }
+                if (containedBannedPhrase) {
+                    continue; // start new message iteration
+                }
+                // collect recipients
+                ArrayList<String> recipients = new ArrayList<>();
+                String recipient;
+                while ((recipient = in.readLine()) != null) {
+                    if (recipient.equals("\0\0")) {
+                        break; // end of recipients signal
+                    }
+                    if (!recipient.trim().isEmpty()) {
+                        recipients.add(recipient);
+                    }
+                }
+                server.shareMessageWith(username, recipients, message.toString().trim());
+                logger.info(logUsername + "tried to send a message to (" + recipients.size() + ") recipients");
             }
         } catch (IOException e) {
-            logger.warn(socket.getRemoteSocketAddress() + " disconnected with: " + e.getMessage());
+            logger.info(logUsername + "disconnected: " + e.getMessage());
         } finally {
-            server.removeConnectionHandler(this);
+            server.removeUserFromActive(username);
+            cleanUpResources();
         }
     }
 
-    public void sendMessage(String message, boolean closeConnection) {
+    public void sendMessage(String message) {
+        out.println(message);
+        if (out.checkError()) {
+            logger.warn("Failed to send message to " + logUsername);
+        }
+    }
+
+    public void cleanUpResources() {
         try {
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            out.println(message);
-            if (closeConnection) socket.close();
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+            if (out != null) {
+                out.close();
+            }
         } catch (IOException e) {
-            logger.error("Error sending message to " + socket.getRemoteSocketAddress() + ". " + e.getMessage(), e);
+            logger.warn("Error cleaning resources for " + logUsername + ": " + e.getMessage());
         }
-    }
-
-    public Socket getSocket() {
-        return socket;
     }
 }
