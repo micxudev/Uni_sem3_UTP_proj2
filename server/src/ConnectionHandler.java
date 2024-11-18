@@ -2,98 +2,121 @@ import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 public class ConnectionHandler implements Runnable {
     private final Socket socket;
     private final Server server;
     private final Logger logger;
-    private String username;
     private String logUsername;
+    private String username;
     private PrintWriter out;
+    private boolean passedValidation;
 
     public ConnectionHandler(Socket socket, Server server) {
         this.socket = socket;
         this.server = server;
         this.logger = Logger.getInstance();
+        this.logUsername = "(" + socket.getRemoteSocketAddress() + ") ";
     }
 
     @Override
     public void run() {
+        server.addConnectionToActive(this);
         logger.info("Run validation for: " + socket.getRemoteSocketAddress());
         try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
             out = new PrintWriter(socket.getOutputStream(), true);
+
             // validation
-            while (true) {
+            while (!passedValidation) {
                 username = in.readLine();
                 if (username == null) {
                     throw new IOException("connection closed before valid username received");
                 }
-                logUsername = username + " (" + socket.getRemoteSocketAddress() + ") ";
                 if (!server.isValidUsername(username)) {
-                    sendMessage("username is invalid");
-                    logger.info(logUsername + "tried to connect with invalid username");
+                    sendMessage(SEND_TYPE.VALIDATION + VALIDATION_STATUS.USERNAME_INVALID.toString());
+                    logger.info(logUsername + "tried to connect with invalid username: " + username);
                     continue;
                 }
                 if (server.isTakenUsername(username)) {
-                    sendMessage("username is taken");
-                    logger.info(logUsername + "tried to connect with name taken");
+                    sendMessage(SEND_TYPE.VALIDATION + VALIDATION_STATUS.USERNAME_TAKEN.toString());
+                    logger.info(logUsername + "tried to connect with taken username: " + username);
                     continue;
                 }
-                break;
+                sendMessage(SEND_TYPE.VALIDATION + VALIDATION_STATUS.PASSED.toString());
+                passedValidation = true;
+                logUsername = username + " (" + socket.getRemoteSocketAddress() + ") ";
+                logger.info(logUsername + "passed validation");
             }
-            logger.info(logUsername + "passed validation");
+
+            // send all active users
+            sendMessage(SEND_TYPE.ACTIVE + server.getActiveUsersStr());
+
+            // add as active
             server.addUserToActive(username, this);
+
             // start reading messages
+            logger.info("Started reading messages from: " + logUsername);
             HashSet<String> bannedPhrases = server.getBannedPhrases();
-            logger.info("Started reading messages from" + logUsername);
+
+            int INIT_MSG_CAP = 512;
+            StringBuilder message = new StringBuilder(INIT_MSG_CAP);
+            String line;
+            boolean hasBannedPhrase = false;
+
+            // read until disconnected
             while (true) {
-                StringBuilder message = new StringBuilder();
-                boolean containedBannedPhrase = false;
-                String line;
-                // read lines until: 1. !banned 2. end-of-message signal or 3. banned phrase is encountered
-                while ((line = in.readLine()) != null) {
-                    if (line.equals("!banned")) {
-                        sendMessage(server.getBannedPhrasesStr());
+                line = in.readLine();
+
+                // case: disconnected
+                if (line == null) {
+                    throw new IOException("sent null");
+                }
+
+                // case: !banned
+                if (line.trim().equals("!banned")) {
+                    sendMessage(SEND_TYPE.BANLIST + server.getBannedPhrasesStr());
+                    continue;
+                }
+
+                // case: end of message signal
+                if (line.equals("\0\0")) {
+                    // according to the protocol, next line should be a list of recipients
+                    String recipientsStr = in.readLine();
+                    String[] recipientsArr = recipientsStr.split(" ");
+                    ArrayList<String> recipients = new ArrayList<>(List.of(recipientsArr));
+                    server.shareMessageWith(username, recipients, message.toString().trim());
+                    message = new StringBuilder(INIT_MSG_CAP);
+                    continue;
+                }
+
+                // check for banned phrase (linear search, slow for large bannedPhrases size)
+                for (String bannedPhrase : bannedPhrases) {
+                    if (line.toLowerCase().contains(bannedPhrase)) {
+                        hasBannedPhrase = true;
                         break;
                     }
-                    if (line.equals("\0\0")) {
-                        break; // end-of-message signal
-                    }
-                    for (String bannedPhrase : bannedPhrases) {
-                        if (line.contains(bannedPhrase)) {
-                            sendMessage("Your message contains a banned phrase. Use !banned to see banned phrases");
-                            containedBannedPhrase = true;
-                            break;
-                        }
-                    }
-                    if (containedBannedPhrase) {
-                        logger.info(logUsername + "sent a message with a banned phrase");
-                        break;
-                    }
-                    message.append(line).append("\n");
                 }
-                if (containedBannedPhrase) {
-                    continue; // start new message iteration
+                if (hasBannedPhrase) {
+                    sendMessage(SEND_TYPE.BANNED_PHRASE.toString() + BANNED_PHRASE.COMMAND + BANNED_PHRASE.VALUE);
+                    logger.info(logUsername + "sent a message with a banned phrase");
+                    message = new StringBuilder(INIT_MSG_CAP);
+                    hasBannedPhrase = false;
+                    continue;
                 }
-                // collect recipients
-                ArrayList<String> recipients = new ArrayList<>();
-                String recipient;
-                while ((recipient = in.readLine()) != null) {
-                    if (recipient.equals("\0\0")) {
-                        break; // end of recipients signal
-                    }
-                    if (!recipient.trim().isEmpty()) {
-                        recipients.add(recipient);
-                    }
-                }
-                server.shareMessageWith(username, recipients, message.toString().trim());
-                logger.info(logUsername + "tried to send a message to (" + recipients.size() + ") recipients");
+
+                message.append(line).append("\n");
             }
         } catch (IOException e) {
             logger.info(logUsername + "disconnected: " + e.getMessage());
         } finally {
-            server.removeUserFromActive(username);
-            cleanUpResources();
+            if (passedValidation && server.isRunning()) {
+                server.removeUserFromActive(username);
+            }
+            if (server.isRunning()) {
+                server.removeConnectionFromActive(this);
+                cleanUpResources();
+            }
         }
     }
 
@@ -106,12 +129,8 @@ public class ConnectionHandler implements Runnable {
 
     public void cleanUpResources() {
         try {
-            if (socket != null && !socket.isClosed()) {
-                socket.close();
-            }
-            if (out != null) {
-                out.close();
-            }
+            socket.close();
+            out = null;
         } catch (IOException e) {
             logger.warn("Error cleaning resources for " + logUsername + ": " + e.getMessage());
         }
