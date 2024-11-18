@@ -14,13 +14,13 @@ import java.util.regex.Pattern;
 public class Server implements Runnable {
     private final ServerSocket serverSocket;
     private final ExecutorService connectionPool;
-    private final ConcurrentHashMap<String, ConnectionHandler> activeConnections;
+    private final ConcurrentHashMap<ConnectionHandler, Boolean> activeConnections;
+    private final ConcurrentHashMap<String, ConnectionHandler> activeUsers;
     private final String name;
     private final HashSet<String> bannedPhrases;
     private final String bannedPhrasesStr;
     private final Logger logger;
     private volatile boolean isRunning;
-    enum CONNECTION_ACTION { ADDED, REMOVED }
 
     public Server(String configPath) throws IllegalArgumentException, IOException {
         Properties props = new Properties();
@@ -32,9 +32,10 @@ public class Server implements Runnable {
         this.serverSocket = new ServerSocket(port);
         this.connectionPool = Executors.newFixedThreadPool(poolSize);
         this.activeConnections = new ConcurrentHashMap<>();
+        this.activeUsers = new ConcurrentHashMap<>();
         this.name = props.getProperty("name", "Server");
         this.bannedPhrases = parseBannedPhrases(props.getProperty("bannedPhrases", ""));
-        this.bannedPhrasesStr = String.join(",", bannedPhrases) + '\n';
+        this.bannedPhrasesStr = String.join(", ", bannedPhrases);
         this.logger = Logger.getInstance();
     }
 
@@ -62,18 +63,22 @@ public class Server implements Runnable {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             } else {
-                logger.warn("Socket was already closed.");
+                logger.warn("Server Socket was already closed.");
             }
         } catch (IOException e) {
-            logger.error("Error closing server socket.", e);
+            logger.error("Error during closing server socket.", e);
         }
-        logger.info("Notifying all active users about server shutdown...");
-        activeConnections.values().forEach(handler -> {
-            handler.sendMessage("server closed");
+        logger.info("Notifying all active connections about server shutdown...");
+        activeConnections.keySet().forEach(handler -> {
+            handler.sendMessage(SEND_TYPE.SHUTDOWN.toString());
             handler.cleanUpResources();
         });
         logger.info("Shutting down connection pool...");
         connectionPool.shutdownNow();
+    }
+
+    public boolean isRunning() {
+        return isRunning;
     }
 
     private HashSet<String> parseBannedPhrases(String str) {
@@ -95,17 +100,17 @@ public class Server implements Runnable {
 
     public void shareMessageWith(String senderUsername, ArrayList<String> recipients, String message) {
         if (recipients == null || recipients.isEmpty()) {
-            logger.warn("No recipients provided to share the message with");
+            logger.warn("No recipients provided by " + senderUsername);
             return;
         }
         if (message == null || message.isEmpty()) {
             logger.warn("Empty message provided by " + senderUsername);
             return;
         }
-        String protocolFormattedMessage = String.format("type: message\nsender: %s\n%s\0\0", senderUsername, message);
+        String protocolFormattedMessage = SEND_TYPE.MESSAGE.toString() + MESSAGE_SENDER.SENDER + senderUsername + "\n" + message + "\n\0\0";
         List<String> missingUsers = recipients.stream()
             .filter(username -> {
-                ConnectionHandler user = activeConnections.get(username);
+                ConnectionHandler user = activeUsers.get(username);
                 if (user != null) {
                     user.sendMessage(protocolFormattedMessage);
                     return false;
@@ -118,22 +123,20 @@ public class Server implements Runnable {
     }
 
     public void addUserToActive(String username, ConnectionHandler handler) {
-        activeConnections.put(username, handler);
-        notifyAllActiveUsers(CONNECTION_ACTION.ADDED, username);
+        notifyAllActiveUsers(CONNECTION_ACTION.ADDED, username, handler);
+        activeUsers.put(username, handler);
     }
 
     public void removeUserFromActive(String username) {
-        activeConnections.remove(username);
-        notifyAllActiveUsers(CONNECTION_ACTION.REMOVED, username);
+        ConnectionHandler removed = activeUsers.remove(username);
+        notifyAllActiveUsers(CONNECTION_ACTION.REMOVED, username, removed);
     }
 
-    private void notifyAllActiveUsers(CONNECTION_ACTION action, String username) {
-        String actionStr = switch (action) {
-            case ADDED -> "added";
-            case REMOVED -> "removed";
-        };
-        String protocolFormattedMessage = String.format("type: connection\naction: %s\nusername: %s", actionStr, username);
-        activeConnections.values().forEach(handler -> handler.sendMessage(protocolFormattedMessage));
+    private void notifyAllActiveUsers(CONNECTION_ACTION action, String username, ConnectionHandler excluded) {
+        String protocolFormattedMessage = SEND_TYPE.CONNECTION + action.toString() + CONNECTION_USERNAME.USERNAME + username;
+        activeUsers.values().stream()
+            .filter(handler -> handler != excluded)
+            .forEach(handler -> handler.sendMessage(protocolFormattedMessage));
     }
 
     public boolean isValidUsername(String username) {
@@ -141,7 +144,7 @@ public class Server implements Runnable {
     }
 
     public boolean isTakenUsername(String username) {
-        return activeConnections.containsKey(username);
+        return activeUsers.containsKey(username);
     }
 
     public HashSet<String> getBannedPhrases() {
@@ -150,5 +153,17 @@ public class Server implements Runnable {
 
     public String getBannedPhrasesStr() {
         return bannedPhrasesStr;
+    }
+
+    public String getActiveUsersStr() {
+        return String.join(" ", activeUsers.keySet());
+    }
+
+    public void addConnectionToActive(ConnectionHandler handler) {
+        activeConnections.put(handler, true);
+    }
+
+    public void removeConnectionFromActive(ConnectionHandler handler) {
+        activeConnections.remove(handler);
     }
 }
