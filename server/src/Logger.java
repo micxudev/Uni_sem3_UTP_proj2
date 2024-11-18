@@ -54,7 +54,7 @@ public class Logger {
     }
 
     private void createLogThread() {
-        Thread logThread = new Thread(() -> {
+        new Thread(() -> {
             info(Thread.currentThread().getName() + " started running.");
             isRunning = true;
             while (isRunning || !logQueue.isEmpty()) {
@@ -62,13 +62,12 @@ public class Logger {
                     String logMessage = logQueue.take();
                     fileWriter.println(logMessage);
                 } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                    error(Thread.currentThread().getName() + " interrupted during take().", e);
                 }
             }
             fileWriter.close();
-            warn(Thread.currentThread().getName() + " stopped running. (not included in log file)");
-        }, "Log thread");
-        logThread.start();
+            info(Thread.currentThread().getName() + " stopped running. (not included in log file)");
+        }, "Log thread").start();
     }
 
     public void console(String message) {

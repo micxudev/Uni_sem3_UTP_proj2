@@ -14,10 +14,10 @@ public static void main() {
 }
 
 /**
- * Creates and starts Console Thread
+ * Creates and starts Console Thread.
  */
 private static void createConsoleThread() {
-    Thread consoleThread = new Thread(() -> {
+    new Thread(() -> {
         logger.info(Thread.currentThread().getName() + " started running.");
         try (BufferedReader in = new BufferedReader(new InputStreamReader(System.in))) {
             String input;
@@ -41,15 +41,14 @@ private static void createConsoleThread() {
             logger.info(Thread.currentThread().getName() + " stopped running.");
             logger.shutDown();
         }
-    }, "Console thread");
-    consoleThread.start();
+    }, "Console thread").start();
 }
 
 /**
  * Processes the input command and takes action.
  *
- * @param command the input command
- * @return true to continue running, false to terminate the loop
+ * @param command the input command.
+ * @return true to continue running, false to terminate the loop.
  */
 private static boolean processCommand(String command) {
     switch (command) {
@@ -115,7 +114,6 @@ private static void stopServer(boolean showMessage) {
                 server = null;
             } catch (InterruptedException e) {
                 logger.error(serverThread.getName() + " interrupted during termination.", e);
-                Thread.currentThread().interrupt();
             }
         } else {
             if (showMessage) logger.warn("Server is not running.");
