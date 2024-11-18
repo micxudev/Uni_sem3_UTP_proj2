@@ -27,7 +27,7 @@ private static void createConsoleThread() {
                     if (input.isEmpty()) {
                         continue;
                     }
-                    logger.console("Received command: " + input);
+                    logger.console(input);
                     if (!processCommand(input)) {
                         break;
                     }
