@@ -6,14 +6,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Server implements Runnable {
     private final ServerSocket serverSocket;
-    private final ExecutorService connectionPool;
     private final ConcurrentHashMap<ConnectionHandler, Boolean> activeConnections;
     private final ConcurrentHashMap<String, ConnectionHandler> activeUsers;
     private final String name;
@@ -28,9 +25,7 @@ public class Server implements Runnable {
             props.load(in);
         }
         int port = Integer.parseInt(props.getProperty("port", "80"));
-        int poolSize = Integer.parseInt(props.getProperty("connectionPoolSize", "100"));
         this.serverSocket = new ServerSocket(port);
-        this.connectionPool = Executors.newFixedThreadPool(poolSize);
         this.activeConnections = new ConcurrentHashMap<>();
         this.activeUsers = new ConcurrentHashMap<>();
         this.name = props.getProperty("name", "Server");
@@ -47,7 +42,7 @@ public class Server implements Runnable {
         while (isRunning) {
             try {
                 Socket socket = serverSocket.accept();
-                connectionPool.execute(new ConnectionHandler(socket, this));
+                Thread.ofVirtual().start(new ConnectionHandler(socket, this)).setName("CH");
             } catch (IOException e) {
                 if (isRunning) {
                     logger.error("Error accepting client connection.", e);
@@ -73,8 +68,6 @@ public class Server implements Runnable {
             handler.sendMessage(SEND_TYPE.SHUTDOWN.toString());
             handler.cleanUpResources();
         });
-        logger.info("Shutting down connection pool...");
-        connectionPool.shutdownNow();
     }
 
     public boolean isRunning() {
