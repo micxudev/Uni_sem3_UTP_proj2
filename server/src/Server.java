@@ -140,6 +140,13 @@ public class Server implements Runnable {
         return activeUsers.containsKey(username);
     }
 
+    public boolean containsBannedPhrase(String line, String bannedPhrase) {
+        String lineToLower = line.toLowerCase();
+        Pattern pattern = Pattern.compile("\\s+" + bannedPhrase + "\\s+");
+        Matcher matcher = pattern.matcher(lineToLower);
+        return matcher.find();
+    }
+
     public HashSet<String> getBannedPhrases() {
         return bannedPhrases;
     }

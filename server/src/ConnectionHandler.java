@@ -92,7 +92,7 @@ public class ConnectionHandler implements Runnable {
 
                 // check for banned phrase (linear search, slow for large bannedPhrases size)
                 for (String bannedPhrase : bannedPhrases) {
-                    if (line.toLowerCase().contains(bannedPhrase)) {
+                    if (server.containsBannedPhrase(line, bannedPhrase)) {
                         hasBannedPhrase = true;
                         break;
                     }
