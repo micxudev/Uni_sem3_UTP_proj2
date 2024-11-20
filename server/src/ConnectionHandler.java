@@ -112,7 +112,7 @@ public class ConnectionHandler implements Runnable {
 
     public void sendMessage(String message) {
         try {
-            out.write(message.length());
+            out.writeInt(message.length());
             out.writeBytes(message);
         } catch (IOException e) {
             logger.warn("Failed to send message to " + logUsername + ": " + e.getMessage());
