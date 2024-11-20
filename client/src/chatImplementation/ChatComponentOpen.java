@@ -1,7 +1,6 @@
 package chatImplementation;
 
 import connectionImplementation.Connection;
-import connectionImplementation.Connector;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -276,7 +275,7 @@ public class ChatComponentOpen extends JPanel {
     private void sendMessage() {
         if (messageTA.getText().trim().isEmpty()) return;
 
-        if (Connector.isConnected()) {
+        if (Connection.isAlive()) {
             try {
                 List<String> chunks = Connection.sendMessageToAServer(messageTA.getText().trim());
 

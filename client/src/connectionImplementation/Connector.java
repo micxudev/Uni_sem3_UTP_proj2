@@ -11,7 +11,7 @@ import static connectionImplementation.ConnectionStatus.*;
 public class Connector {
     private Connector() {}
 
-    public static ConnectionStatus tryToConnect(String ip, String port) {
+    public static ConnectionStatus tryToConnect(String ip, String port, String username) {
         int port_int;
 
         try {
@@ -26,9 +26,8 @@ public class Connector {
 
         try {
             Socket socket = new Socket();
-            socket.connect(new InetSocketAddress(ip, port_int), 10_000);
-            Connection.setNewConnection(socket);
-            return CONNECTED;
+            socket.connect(new InetSocketAddress(ip, port_int), 5000);
+            return Connection.setNewConnection(socket, username);
         } catch (SocketTimeoutException _) {
             return CONNECTION_TIMEOUT;
         } catch (UnknownHostException _) {
@@ -39,13 +38,16 @@ public class Connector {
     }
 
     public static ConnectionStatus tryToDisconnect() {
-        if (Connection.isConnectionAlive()) {
+        if (Connection.isAlive()) {
             return Connection.closeConnection();
         }
         return ALREADY_DISCONNECTED;
     }
 
-    public static boolean isConnected() {
-        return Connection.isConnectionAlive();
+    public static ConnectionStatus resendUsername(String newUsername) {
+        if (Connection.isAlive()) {
+            return Connection.tryToResendUsername(newUsername);
+        }
+        return ALREADY_DISCONNECTED;
     }
 }

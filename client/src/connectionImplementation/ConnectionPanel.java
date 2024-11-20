@@ -19,36 +19,40 @@ public class ConnectionPanel extends JPanel {
         JLabel titleLabel = createTitleLabel();
 
         JTextField ipTextField = createTextField("IP address");
-        ipTextField.setText("77.255.53.217");
+        ipTextField.setText("localhost");
 
         JTextField portTextField = createTextField("Port (0-65535)");
         portTextField.setText("25575");
 
+        JTextField usernameTextField = createTextField("Name [a-z0-9_] [5;32]");
+
         JLabel statusLabel = createStatusLabel();
 
         JButton connectButton = createConnectButton();
-        connectionController = new ConnectionController(ipTextField, portTextField, statusLabel, connectButton, northServerIp, northConnectionStatus);
+        connectionController = new ConnectionController(ipTextField, portTextField, usernameTextField, statusLabel, connectButton, northServerIp, northConnectionStatus);
         connectButton.addActionListener(_ -> connectionController.buttonClick());
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = gbc.gridy = 0;
-        gbc.insets.bottom = 40;
+        gbc.insets.bottom = 30;
         add(titleLabel, gbc);
         gbc.gridy = 1;
         gbc.insets.bottom = 15;
         add(ipTextField, gbc);
         gbc.gridy = 2;
-        gbc.insets.bottom = 0;
         add(portTextField, gbc);
         gbc.gridy = 3;
+        gbc.insets.bottom = 0;
+        add(usernameTextField, gbc);
+        gbc.gridy = 4;
         gbc.insets.bottom = 15;
         add(statusLabel, gbc);
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         add(connectButton, gbc);
     }
 
     private JLabel createTitleLabel() {
-        return new JLabel("Test Server Connection") {
+        return new JLabel("Server Connection") {
             {
                 setFont(CONNECTION__TITLE);
                 setForeground(CONTENT__TITLE__FG);
@@ -144,7 +148,6 @@ public class ConnectionPanel extends JPanel {
             }
         };
     }
-
 
     public static ConnectionController getConnectionController() {
         return connectionController;

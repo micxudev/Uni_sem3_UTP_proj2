@@ -1,79 +1,193 @@
 package connectionImplementation;
 
+import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static connectionImplementation.ConnectionStatus.*;
 
 public class Connection {
-    private static final ConnectionController connectionController = ConnectionPanel.getConnectionController();
+    //private static final ConnectionController connectionController = ConnectionPanel.getConnectionController();
     private static Socket socket;
-    private static Thread connectionMonitor;
-    private static boolean isClosedManually;
+    private static Thread readThread;
+    private static Thread workerThread;
+    private static String username;
+    private static final BlockingQueue<String> messagesQueue = new LinkedBlockingQueue<>();
+    //private static boolean isClosedManually;
+
+    private static BufferedReader in;
+    private static PrintWriter out;
+
+    private static boolean passedUsernameValidation;
 
     private Connection() {}
 
-    public static void setNewConnection(Socket newSocket) {
+    public static ConnectionStatus setNewConnection(Socket newSocket, String newUsername) {
         socket = newSocket;
-        isClosedManually = false;
-        startConnectionMonitorThread();
+        username = newUsername;
+        messagesQueue.clear();
+        try {
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out = new PrintWriter(socket.getOutputStream(), true);
+            startReadingThread();
+        } catch (IOException _) {
+            return IO_EXCEPTION;
+        }
+        return getConnectionStatusAfterUsernameValidation();
     }
 
-    public static boolean isConnectionAlive() {
-        return socket != null && !socket.isClosed() && connectionMonitor != null && connectionMonitor.isAlive();
+    // create thread for reading from the server
+    private static void startReadingThread() {
+        readThread = new Thread(() -> {
+            try {
+                String line;
+                while ((line = in.readLine()) != null) {
+                    messagesQueue.offer(line);
+                }
+                // server sent null, process: (notify UI)
+            } catch (IOException _) {
+                // socket was closed and exception raised, process: (notify UI)
+            } finally {
+                // do smth in both cases
+            }
+        });
+        readThread.start();
     }
 
-    private static void startConnectionMonitorThread() {
-        connectionMonitor = new Thread(() -> {
-            // TODO: finish.
-            //  Read and accumulate chunks
-            //  When done send to chat or connection controller to add on the message panel.
-            try (InputStream in = socket.getInputStream()) {
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-                StringBuilder sb = new StringBuilder();
+    // processes the messages from the queue and takes actions
+    private static void startWorkerThread() {
+        workerThread = new Thread(() -> {
+            while (true) {
+                try {
+                    String line = messagesQueue.take();
 
-                while((bytesRead = in.read(buffer)) != -1) {
-                    sb.append(new String(buffer, 0, bytesRead, StandardCharsets.UTF_8));
-                    System.out.println("[SERVER SAYS]:\n" + sb);
-                    //addChunksOnMessagePanel(List<String> chunks)
+                } catch (InterruptedException e) {
+                    System.out.println("WORKER INTERRUPTED WHILE PROCESSING MESSAGES: " + e.getMessage());
+                    e.printStackTrace(System.err);
+                }
+            }
+        });
+        workerThread.start();
+    }
+
+
+    // type: validation
+    private static ConnectionStatus getConnectionStatusAfterUsernameValidation() {
+         SwingWorker<ConnectionStatus, Void> worker = new SwingWorker<>() {
+            @Override
+            protected ConnectionStatus doInBackground() {
+                try {
+                    // username validation
+                    out.println(username);
+                    if(out.checkError()) {
+                        return IO_EXCEPTION;
+                    }
+
+                    String validationType = in.readLine();
+                    if (!"type: validation".equals(validationType)) {
+                        return PROTOCOL_VIOLATION;
+                    }
+
+                    String status = getLineValue(in.readLine());
+                    return switch (status) {
+                        case "username is invalid" -> USERNAME_INVALID;
+                        case "username is taken" -> USERNAME_TAKEN;
+                        case "passed successfully" -> {
+                            passedUsernameValidation = true;
+                            yield CONNECTED;
+                        }
+                        default -> PROTOCOL_VIOLATION;
+                    };
+                } catch (IOException _) {
+                    return IO_EXCEPTION;
+                }
+            }
+        };
+         worker.execute();
+        try {
+            return worker.get();
+        } catch (InterruptedException | ExecutionException _) {
+            return UNKNOWN_ERROR;
+        }
+    }
+
+    public static ConnectionStatus tryToResendUsername(String newUsername) {
+        username = newUsername;
+        return getConnectionStatusAfterUsernameValidation();
+    }
+
+    /*connectionThread = new Thread(() -> {
+            try {
+                // read current active users
+                String activeType = in.readLine();
+                assert activeType.equals("type: active");
+                String users = in.readLine();
+                String[] usersArray = users.split(" ");
+                if (usersArray.length > 0) {
+                    // add chat for every user
+                }
+                System.out.println("READ USERS");
+
+                String line;
+                while ((line = in.readLine()) != null) {
+                    // read and process messages
+                    System.out.println("Received: " + line);
                 }
                 connectionController.serverClosedConnection("server closed connection");
             } catch (IOException e) {
                 if (!isClosedManually) {
                     connectionController.serverClosedConnection("abruptly closed connection");
-                    System.err.println("IOException: " + e.getMessage());
-                    e.printStackTrace(System.err);
+                    System.err.println("(connectionThread finished with exception) IOException: " + e.getMessage());
                 }
+            } catch (IllegalArgumentException e) {
+                System.out.println("CAUGHT IllegalArgumentException");
+                connectionController.serverClosedConnection(e.getMessage());
+            } finally {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    System.out.println("Error closing the socket: " + e.getMessage());
+                }
+                System.out.println("CONNECTION THREAD TERMINATED");
             }
-        }, "ConnectionMonitor thread");
-        connectionMonitor.start();
+        });
+        connectionThread.start();
+*/
+
+    private static String getLineValue(String line) {
+        return line.substring(line.indexOf(':') + 2);
     }
 
     public static ConnectionStatus closeConnection() {
-        isClosedManually = true;
+        passedUsernameValidation = false;
         try {
             if (socket != null && !socket.isClosed()) {
                 socket.close();
-            }
-            if (connectionMonitor != null && connectionMonitor.isAlive()) {
-                connectionMonitor.join();
+                in = null;
+                out = null;
             }
             return DISCONNECTED;
         } catch (IOException _) {
             return ERROR_CLOSING_CONNECTION;
-        } catch (InterruptedException _) {
-            Thread.currentThread().interrupt();
-            return THREAD_INTERRUPTED;
         }
     }
 
+    public static boolean isAlive() {
+        return socket != null && !socket.isClosed();
+    }
+
+    public static boolean passedUsernameValidation() {
+        return passedUsernameValidation;
+    }
+
+
     public static List<String> sendMessageToAServer(String message) throws IOException {
-        // TODO: byte[] bytes = message.getBytes(StandardCharsets.UTF_8); may create a large array
-        //  it might be better to process and send in chunks of 4KB
         DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
         byte[] bytes = message.getBytes(StandardCharsets.UTF_8);

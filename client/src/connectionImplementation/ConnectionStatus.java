@@ -11,7 +11,11 @@ public enum ConnectionStatus {
     ALREADY_DISCONNECTED(-6, "already disconnected"),
     ERROR_CLOSING_CONNECTION(-7, "error closing connection"),
     THREAD_INTERRUPTED(-8, "connection closing was interrupted"),
-    CONNECTION_TIMEOUT(-9, "connection attempt timed out");
+    CONNECTION_TIMEOUT(-9, "connection attempt timed out"),
+    USERNAME_INVALID (-10, "username is invalid"),
+    USERNAME_TAKEN (-11, "username is taken"),
+    IO_EXCEPTION(-12, "IO exception"),
+    PROTOCOL_VIOLATION(-13, "protocol violation");
 
     private final int code;
     private final String message;
