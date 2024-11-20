@@ -1,7 +1,7 @@
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 public class ConnectionHandler implements Runnable {
@@ -10,8 +10,9 @@ public class ConnectionHandler implements Runnable {
     private final Logger logger;
     private String logUsername;
     private String username;
-    private PrintWriter out;
-    private boolean passedValidation;
+    private DataOutputStream out;
+    private DataInputStream in;
+    private boolean passedUsernameValidation;
 
     public ConnectionHandler(Socket socket, Server server) {
         this.socket = socket;
@@ -22,17 +23,17 @@ public class ConnectionHandler implements Runnable {
 
     @Override
     public void run() {
+        // add as active server connection
         server.addConnectionToActive(this);
         logger.info("Run validation for: " + socket.getRemoteSocketAddress());
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-            out = new PrintWriter(socket.getOutputStream(), true);
+        try {
+            in = new DataInputStream(socket.getInputStream());
+            out = new DataOutputStream(socket.getOutputStream());
 
-            // validation
-            while (!passedValidation) {
-                username = in.readLine();
-                if (username == null) {
-                    throw new IOException("connection closed before valid username received");
-                }
+            // username validation
+            while (!passedUsernameValidation) {
+                int size = readMessageSize();
+                username = readMessageOfSize(size);
                 if (!server.isValidUsername(username)) {
                     sendMessage(SEND_TYPE.VALIDATION + VALIDATION_STATUS.USERNAME_INVALID.toString());
                     logger.info(logUsername + "tried to connect with invalid username: " + username);
@@ -44,7 +45,7 @@ public class ConnectionHandler implements Runnable {
                     continue;
                 }
                 sendMessage(SEND_TYPE.VALIDATION + VALIDATION_STATUS.PASSED.toString());
-                passedValidation = true;
+                passedUsernameValidation = true;
                 logUsername = username + " (" + socket.getRemoteSocketAddress() + ") ";
                 logger.info(logUsername + "passed validation");
             }
@@ -52,65 +53,40 @@ public class ConnectionHandler implements Runnable {
             // send all active users
             sendMessage(SEND_TYPE.ACTIVE + server.getActiveUsersStr());
 
-            // add as active
+            // add as active user
             server.addUserToActive(username, this);
 
-            // start reading messages
-            logger.info("Started reading messages from: " + logUsername);
-            HashSet<String> bannedPhrases = server.getBannedPhrases();
-
-            int INIT_MSG_CAP = 512;
-            StringBuilder message = new StringBuilder(INIT_MSG_CAP);
-            String line;
-            boolean hasBannedPhrase = false;
-
-            // read until disconnected
+            // start reading messages, read messages until client disconnects
             while (true) {
-                line = in.readLine();
+                int size = readMessageSize();
+                String messageRead = readMessageOfSize(size);
 
-                // case: disconnected
-                if (line == null) {
-                    throw new IOException("sent null");
-                }
-
-                // case: !banned
-                if (line.trim().equals("!banned")) {
+                // message type: !banned
+                if (messageRead.equals("!banned")) {
                     sendMessage(SEND_TYPE.BANLIST + server.getBannedPhrasesStr());
                     continue;
                 }
 
-                // case: end of message signal
-                if (line.equals("\0\0")) {
-                    // according to the protocol, next line should be a list of recipients
-                    String recipientsStr = in.readLine();
-                    String[] recipientsArr = recipientsStr.split(" ");
-                    ArrayList<String> recipients = new ArrayList<>(List.of(recipientsArr));
-                    server.shareMessageWith(username, recipients, message.toString().trim());
-                    message = new StringBuilder(INIT_MSG_CAP);
-                    continue;
+                // split read message into 2 parts according to the protocol
+                // messageParts[0] - message itself
+                // messageParts[1] - recipients (separated by space)
+                String[] messageParts = messageRead.split("\0\0\n");
+                if (messageParts.length != 2) {
+                    throw new IllegalArgumentException("sent invalid message format");
                 }
 
-                // check for banned phrase (linear search, slow for large bannedPhrases size)
-                for (String bannedPhrase : bannedPhrases) {
-                    if (server.containsBannedPhrase(line, bannedPhrase)) {
-                        hasBannedPhrase = true;
-                        break;
-                    }
-                }
-                if (hasBannedPhrase) {
-                    sendMessage(SEND_TYPE.BANNED_PHRASE.toString() + BANNED_PHRASE.COMMAND + BANNED_PHRASE.VALUE);
-                    logger.info(logUsername + "sent a message with a banned phrase");
-                    message = new StringBuilder(INIT_MSG_CAP);
-                    hasBannedPhrase = false;
-                    continue;
-                }
-
-                message.append(line).append("\n");
+                // attempt to send the message to specified users
+                String[] recipients = messageParts[1].split(" ");
+                server.attemptToShareMessageWith(this, messageParts[0], new ArrayList<>(List.of(recipients)));
             }
+        } catch (IllegalArgumentException e) {
+            logger.info(logUsername + "disconnected with IllegalArg: " + e.getMessage());
+        } catch (EOFException e) {
+            logger.info(logUsername + "disconnected with EOF: " + e.getMessage());
         } catch (IOException e) {
-            logger.info(logUsername + "disconnected: " + e.getMessage());
+            logger.info(logUsername + "disconnected with IO: " + e.getMessage());
         } finally {
-            if (passedValidation && server.isRunning()) {
+            if (passedUsernameValidation && server.isRunning()) {
                 server.removeUserFromActive(username);
             }
             if (server.isRunning()) {
@@ -120,19 +96,46 @@ public class ConnectionHandler implements Runnable {
         }
     }
 
+    private int readMessageSize() throws IOException {
+        int size = in.readInt();
+        if (size <= 0) {
+            throw new IOException("send invalid message size: " + size);
+        }
+        return size;
+    }
+
+    private String readMessageOfSize(int size) throws IOException {
+        byte[] buf = new byte[size];
+        in.readFully(buf);
+        return new String(buf, StandardCharsets.UTF_8);
+    }
+
     public void sendMessage(String message) {
-        out.println(message);
-        if (out.checkError()) {
-            logger.warn("Failed to send message to " + logUsername);
+        try {
+            out.write(message.length());
+            out.writeBytes(message);
+        } catch (IOException e) {
+            logger.warn("Failed to send message to " + logUsername + ": " + e.getMessage());
         }
     }
 
     public void cleanUpResources() {
         try {
             socket.close();
+            in.close();
+            out.close();
+            in = null;
             out = null;
         } catch (IOException e) {
             logger.warn("Error cleaning resources for " + logUsername + ": " + e.getMessage());
         }
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getLogUsername() {
+        return logUsername;
     }
 }

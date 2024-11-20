@@ -2,7 +2,6 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,8 +13,8 @@ public class Server implements Runnable {
     private final ConcurrentHashMap<ConnectionHandler, Boolean> activeConnections;
     private final ConcurrentHashMap<String, ConnectionHandler> activeUsers;
     private final String name;
-    private final HashSet<String> bannedPhrases;
-    private final String bannedPhrasesStr;
+    private final List<Pattern> bannedPatterns;
+    private String bannedPhrasesStr;
     private final Logger logger;
     private volatile boolean isRunning;
 
@@ -29,8 +28,7 @@ public class Server implements Runnable {
         this.activeConnections = new ConcurrentHashMap<>();
         this.activeUsers = new ConcurrentHashMap<>();
         this.name = props.getProperty("name", "Server");
-        this.bannedPhrases = parseBannedPhrases(props.getProperty("bannedPhrases", ""));
-        this.bannedPhrasesStr = String.join(", ", bannedPhrases);
+        this.bannedPatterns = parseBannedPhrases(props.getProperty("bannedPhrases", ""));
         this.logger = Logger.getInstance();
     }
 
@@ -74,11 +72,12 @@ public class Server implements Runnable {
         return isRunning;
     }
 
-    private HashSet<String> parseBannedPhrases(String str) {
-        HashSet<String> bannedPhrases = new HashSet<>();
+    private List<Pattern> parseBannedPhrases(String str) {
         if (str == null || str.isEmpty()) {
-            return bannedPhrases;
+            return new ArrayList<>();
         }
+
+        ArrayList<String> bannedPhrases = new ArrayList<>();
         Pattern p = Pattern.compile("\"([^\"]*)\"|\\b(\\w+)\\b");
         Matcher m = p.matcher(str);
         while (m.find()) {
@@ -88,19 +87,33 @@ public class Server implements Runnable {
                 bannedPhrases.add(m.group(2));
             }
         }
-        return bannedPhrases;
+
+        this.bannedPhrasesStr = String.join(", ", bannedPhrases);
+
+        return bannedPhrases.stream()
+            .map(phrase -> Pattern.compile("\\b" + Pattern.quote(phrase) + "\\b", Pattern.CASE_INSENSITIVE))
+            .toList();
     }
 
-    public void shareMessageWith(String senderUsername, ArrayList<String> recipients, String message) {
+    public void attemptToShareMessageWith(ConnectionHandler sender, String message, ArrayList<String> recipients) {
         if (recipients == null || recipients.isEmpty()) {
-            logger.warn("No recipients provided by " + senderUsername);
+            logger.warn("No recipients provided by " + sender.getLogUsername());
             return;
         }
         if (message == null || message.isEmpty()) {
-            logger.warn("Empty message provided by " + senderUsername);
+            logger.warn("Empty message provided by " + sender.getLogUsername());
             return;
         }
-        String protocolFormattedMessage = SEND_TYPE.MESSAGE.toString() + MESSAGE_SENDER.SENDER + senderUsername + "\n" + message + "\n\0\0";
+
+        // check for banned phrase
+        if (containsBannedPhrase(message)) {
+            sender.sendMessage(SEND_TYPE.BANNED_PHRASE.toString() + BANNED_PHRASE.COMMAND + BANNED_PHRASE.VALUE);
+            logger.info(sender.getLogUsername() + "sent a message with a banned phrase");
+            return;
+        }
+
+        // attempt to send the message to existing users
+        String protocolFormattedMessage = SEND_TYPE.MESSAGE.toString() + MESSAGE_SENDER.SENDER + sender.getUsername() + "\n" + message + "\n\0\0";
         List<String> missingUsers = recipients.stream()
             .filter(username -> {
                 ConnectionHandler user = activeUsers.get(username);
@@ -140,15 +153,13 @@ public class Server implements Runnable {
         return activeUsers.containsKey(username);
     }
 
-    public boolean containsBannedPhrase(String line, String bannedPhrase) {
-        String lineToLower = line.toLowerCase();
-        Pattern pattern = Pattern.compile("\\s+" + bannedPhrase + "\\s+");
-        Matcher matcher = pattern.matcher(lineToLower);
-        return matcher.find();
-    }
-
-    public HashSet<String> getBannedPhrases() {
-        return bannedPhrases;
+    public boolean containsBannedPhrase(String message) {
+        for (Pattern pattern : bannedPatterns) {
+            if (pattern.matcher(message).find()) {
+                return true; // found banned phrase
+            }
+        }
+        return false;
     }
 
     public String getBannedPhrasesStr() {
