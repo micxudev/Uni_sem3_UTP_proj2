@@ -50,6 +50,9 @@ public class ConnectionHandler implements Runnable {
                 logger.info(logUsername + "passed validation");
             }
 
+            // send welcome message with instructions
+            sendMessage(Formatter.getWelcomeFormatted(username));
+
             // send all active users
             sendMessage(Formatter.getActiveUsersFormatted(server));
 

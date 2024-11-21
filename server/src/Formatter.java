@@ -1,6 +1,6 @@
 public class Formatter {
     // SERVER -> CLIENT:
-    //type: connection, message, banlist, active, shutdown, validation, bannedPhrase
+    //type: connection, message, banlist, active, shutdown, validation, bannedPhrase, welcome
 
     /**
      * TYPE_CONNECTION
@@ -88,6 +88,27 @@ public class Formatter {
     public static String getBannedPhraseCommandFormatted() {
         return "type: bannedPhrase\n" +
                 "command: !banned";
+    }
+
+    /**
+     * TYPE_WELCOME
+     * welcome - welcome message with instructions
+     * type: welcome\n
+     * username: username\n
+     * usage:\n
+     * instructions line1
+     * instructions line2
+     * ...
+     * instructions last line
+     */
+    public static String getWelcomeFormatted(String username) {
+        return "type: welcome\n" +
+                "username: " + username + "\n" +
+                "usage:\n" +
+                "message - send a message to every other connected client\n" +
+                "/msg <username> message - send a message to a specific person\n" +
+                "/msg <username1>, <username2>, <username3> message - send a message to multiple specific people\n" +
+                "/msg NOT <username1>, <username2>, <username3> message - send a message to everyone, with exception to some people";
     }
 
 
