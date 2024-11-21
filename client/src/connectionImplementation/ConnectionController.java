@@ -174,11 +174,11 @@ public class ConnectionController {
         setStatusText(ConnectionStatus.UNKNOWN_ERROR.getMessage());
     }
 
-    /*public void serverClosedConnection(String message) {
+    public void serverClosedConnection(String message) {
         setInputEditable(true);
         connectButton.setEnabled(true);
         connectButton.setText("Connect");
         setStatusColor(CONTENT__STATUS_LABEL__FAILURE);
         setStatusText(message);
-    }*/
+    }
 }

@@ -10,7 +10,7 @@ public enum ConnectionStatus {
     UNKNOWN_ERROR(-5, "unknown error occurred"),
     ALREADY_DISCONNECTED(-6, "already disconnected"),
     ERROR_CLOSING_CONNECTION(-7, "error closing connection"),
-    THREAD_INTERRUPTED(-8, "connection closing was interrupted"),
+    THREAD_INTERRUPTED(-8, "thread was interrupted"),
     CONNECTION_TIMEOUT(-9, "connection attempt timed out"),
     USERNAME_INVALID (-10, "username is invalid"),
     USERNAME_TAKEN (-11, "username is taken"),

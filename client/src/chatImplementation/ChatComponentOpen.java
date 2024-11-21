@@ -8,7 +8,6 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
-import java.util.List;
 
 import static javax.swing.ScrollPaneConstants.*;
 import static managers.ColorManager.*;
@@ -204,7 +203,7 @@ public class ChatComponentOpen extends JPanel {
                                 insert("\n", getCaretPosition());
                             } else {
                                 e.consume();
-                                sendMessage();
+                                processSendMessageAttempt();
                             }
                         }
                     }
@@ -220,7 +219,7 @@ public class ChatComponentOpen extends JPanel {
                 setOpaque(false);
                 sendMessageButton = createButton("Send", OPENCHAT_SENDMSG_BUTTON_SIZE);
                 sendMessageButton.setVisible(false);
-                sendMessageButton.addActionListener(_ -> sendMessage());
+                sendMessageButton.addActionListener(_ -> processSendMessageAttempt());
 
                 add(Box.createVerticalGlue());
                 add(sendMessageButton);
@@ -272,26 +271,27 @@ public class ChatComponentOpen extends JPanel {
     }
 
     // Logic
-    private void sendMessage() {
-        if (messageTA.getText().trim().isEmpty()) return;
+    private void processSendMessageAttempt() {
+        if (messageTA.getText().trim().isEmpty()) {
+            return;
+        }
 
-        if (Connection.isAlive()) {
-            try {
-                List<String> chunks = Connection.sendMessageToAServer(messageTA.getText().trim());
-
-                for (String chunk : chunks) {
-                    messagesPanel.add(new ChatMessageComponent(chunk), gbc);
-                }
-
-                messageTA.setText("");
-                messagesPanel.revalidate();
-
-                SwingUtilities.invokeLater(() -> messagesScroll.getVerticalScrollBar().setValue(Integer.MAX_VALUE));
-            } catch (IOException e) {
-                JOptionPane.showMessageDialog(this, "Error sending a message to the server:\n" + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        } else {
+        if (!Connection.isAlive()) {
             JOptionPane.showMessageDialog(this, "Connect to the server to send a message", "", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        try {
+            String message = messageTA.getText().trim();
+            Connection.sendMessage(message);
+
+            messagesPanel.add(new ChatMessageComponent(message), gbc);
+
+            messageTA.setText("");
+            messagesPanel.revalidate();
+            SwingUtilities.invokeLater(() -> messagesScroll.getVerticalScrollBar().setValue(Integer.MAX_VALUE));
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error sending a message to the server:\n" + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
