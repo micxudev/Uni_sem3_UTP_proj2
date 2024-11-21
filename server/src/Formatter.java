@@ -19,8 +19,7 @@ public class Formatter {
     }
 
     public static String getValidationFormatted(VALIDATION_STATUS status) {
-        return "type: validation\n" +
-                "status: " + status;
+        return "Username validation status: " + status;
     }
 
     public static String getBannedPhraseCommandFormatted() {
