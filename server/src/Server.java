@@ -103,7 +103,7 @@ public class Server implements Runnable {
         // default behaviour (only message):
         // "message" - send to every other connected client (except sender)
         if (!input.startsWith("/msg ")) {
-            result[0] = input.trim();
+            result[0] = senderUsername + " says: " + input.trim();
             result[1] = activeUsers.keySet().stream()
                 .filter(username -> !username.equals(senderUsername))
                 .collect(Collectors.joining(" "));
@@ -130,7 +130,7 @@ public class Server implements Runnable {
             // "/msg <username> : message"                          - send a message to a specific person
             // "/msg <username1> <username2> <username3> : message" - send a message to multiple specific people
             String[] messageAndUsers = splitInputIntoMessageAndUsers(input);
-            result[0] = senderUsername + " whispers to you: " + messageAndUsers[0];
+            result[0] = senderUsername + " says to group and you: " + messageAndUsers[0];
             result[1] = messageAndUsers[1];
         }
         return result;
@@ -140,7 +140,7 @@ public class Server implements Runnable {
         String[] result = new String[2];
         int colonInd = input.indexOf(':');
         if (colonInd == -1) {
-            throw new IllegalArgumentException("SERVER: Invalid message format");
+            throw new IllegalArgumentException("Invalid message format");
         }
         result[0] = input.substring(colonInd + 1).trim();
         result[1] = input.substring(0, colonInd).trim();
@@ -165,12 +165,11 @@ public class Server implements Runnable {
         }
 
         // attempt to send the message to existing users
-        String formattedMessage = Formatter.getMessageFormatted(sender.getUsername(), message);
         List<String> missingUsers = recipients.stream()
             .filter(username -> {
                 ConnectionHandler user = activeUsers.get(username);
                 if (user != null) {
-                    user.sendMessage(formattedMessage);
+                    user.sendMessage(message);
                     return false;
                 }
                 return true;
@@ -181,13 +180,13 @@ public class Server implements Runnable {
     }
 
     public void addUserToActive(String username, ConnectionHandler handler) {
-        notifyAllActiveUsers(CONNECTION_ACTION.ADDED, username, handler);
+        notifyAllActiveUsers(CONNECTION_ACTION.JOINED, username, handler);
         activeUsers.put(username, handler);
     }
 
     public void removeUserFromActive(String username) {
         ConnectionHandler removed = activeUsers.remove(username);
-        notifyAllActiveUsers(CONNECTION_ACTION.REMOVED, username, removed);
+        notifyAllActiveUsers(CONNECTION_ACTION.LEFT, username, removed);
     }
 
     private void notifyAllActiveUsers(CONNECTION_ACTION action, String username, ConnectionHandler excluded) {

@@ -50,8 +50,9 @@ public class ConnectionHandler implements Runnable {
                 logger.info(logUsername + "passed validation");
             }
 
-            // send welcome message with instructions
+            // send welcome message and instructions
             sendMessage(Formatter.getWelcomeFormatted(username));
+            sendMessage(Formatter.getHelpFormatted());
 
             // send all active users
             sendMessage(Formatter.getActiveUsersFormatted(server));
@@ -64,8 +65,12 @@ public class ConnectionHandler implements Runnable {
                 int size = readMessageSize();
                 String messageRead = readMessageOfSize(size);
 
-                // message type: !banned
-                if (messageRead.equals("!banned")) {
+                if (messageRead.trim().equals("!help")) {
+                    sendMessage(Formatter.getHelpFormatted());
+                    continue;
+                }
+
+                if (messageRead.trim().equals("!banned")) {
                     sendMessage(Formatter.getBannedPhrasesFormatted(server));
                     continue;
                 }
@@ -80,7 +85,7 @@ public class ConnectionHandler implements Runnable {
                     // attempt to send the message to specified users
                     server.attemptToShareMessageWith(this, message, recipientsList);
                 } catch (IllegalArgumentException e) {
-                    sendMessage(e.getMessage());
+                    sendMessage(Formatter.getInvalidFormatted(e.getMessage()));
                 }
 
             }
@@ -134,10 +139,6 @@ public class ConnectionHandler implements Runnable {
         } catch (IOException e) {
             logger.warn("Error cleaning resources for " + logUsername + ": " + e.getMessage());
         }
-    }
-
-    public String getUsername() {
-        return username;
     }
 
     public String getLogUsername() {
