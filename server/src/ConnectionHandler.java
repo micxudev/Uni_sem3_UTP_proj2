@@ -35,23 +35,23 @@ public class ConnectionHandler implements Runnable {
                 int size = readMessageSize();
                 username = readMessageOfSize(size);
                 if (!server.isValidUsername(username)) {
-                    sendMessage(SEND_TYPE.VALIDATION + VALIDATION_STATUS.USERNAME_INVALID.toString());
+                    sendMessage(Formatter.getValidationFormatted(VALIDATION_STATUS.USERNAME_INVALID));
                     logger.info(logUsername + "tried to connect with invalid username: " + username);
                     continue;
                 }
                 if (server.isTakenUsername(username)) {
-                    sendMessage(SEND_TYPE.VALIDATION + VALIDATION_STATUS.USERNAME_TAKEN.toString());
+                    sendMessage(Formatter.getValidationFormatted(VALIDATION_STATUS.USERNAME_TAKEN));
                     logger.info(logUsername + "tried to connect with taken username: " + username);
                     continue;
                 }
-                sendMessage(SEND_TYPE.VALIDATION + VALIDATION_STATUS.PASSED.toString());
+                sendMessage(Formatter.getValidationFormatted(VALIDATION_STATUS.PASSED));
                 passedUsernameValidation = true;
                 logUsername = username + " (" + socket.getRemoteSocketAddress() + ") ";
                 logger.info(logUsername + "passed validation");
             }
 
             // send all active users
-            sendMessage(SEND_TYPE.ACTIVE + server.getActiveUsersStr());
+            sendMessage(Formatter.getActiveUsersFormatted(server));
 
             // add as active user
             server.addUserToActive(username, this);
@@ -63,11 +63,11 @@ public class ConnectionHandler implements Runnable {
 
                 // message type: !banned
                 if (messageRead.equals("!banned")) {
-                    sendMessage(SEND_TYPE.BANLIST + server.getBannedPhrasesStr());
+                    sendMessage(Formatter.getBannedPhrasesFormatted(server));
                     continue;
                 }
 
-                // split read message into 2 parts according to the protocol
+                // split read message into 2 parts according to the formatter
                 // messageParts[0] - message itself
                 // messageParts[1] - recipients (separated by space)
                 String[] messageParts = messageRead.split("\0\0\n");

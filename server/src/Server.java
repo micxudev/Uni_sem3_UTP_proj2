@@ -63,7 +63,7 @@ public class Server implements Runnable {
         }
         logger.info("Notifying all active connections about server shutdown...");
         activeConnections.keySet().forEach(handler -> {
-            handler.sendMessage(SEND_TYPE.SHUTDOWN.toString());
+            handler.sendMessage(Formatter.getShutdownFormatted());
             handler.cleanUpResources();
         });
     }
@@ -107,18 +107,18 @@ public class Server implements Runnable {
 
         // check for banned phrase
         if (containsBannedPhrase(message)) {
-            sender.sendMessage(SEND_TYPE.BANNED_PHRASE.toString() + BANNED_PHRASE.COMMAND + BANNED_PHRASE.VALUE);
+            sender.sendMessage(Formatter.getBannedPhraseCommandFormatted());
             logger.info(sender.getLogUsername() + "sent a message with a banned phrase");
             return;
         }
 
         // attempt to send the message to existing users
-        String protocolFormattedMessage = SEND_TYPE.MESSAGE.toString() + MESSAGE_SENDER.SENDER + sender.getUsername() + "\n" + message + "\n\0\0";
+        String formattedMessage = Formatter.getMessageFormatted(sender.getUsername(), message);
         List<String> missingUsers = recipients.stream()
             .filter(username -> {
                 ConnectionHandler user = activeUsers.get(username);
                 if (user != null) {
-                    user.sendMessage(protocolFormattedMessage);
+                    user.sendMessage(formattedMessage);
                     return false;
                 }
                 return true;
@@ -139,10 +139,10 @@ public class Server implements Runnable {
     }
 
     private void notifyAllActiveUsers(CONNECTION_ACTION action, String username, ConnectionHandler excluded) {
-        String protocolFormattedMessage = SEND_TYPE.CONNECTION + action.toString() + CONNECTION_USERNAME.USERNAME + username;
+        String formattedMessage = Formatter.getConnectionFormatted(action, username);
         activeUsers.values().stream()
             .filter(handler -> handler != excluded)
-            .forEach(handler -> handler.sendMessage(protocolFormattedMessage));
+            .forEach(handler -> handler.sendMessage(formattedMessage));
     }
 
     public boolean isValidUsername(String username) {
