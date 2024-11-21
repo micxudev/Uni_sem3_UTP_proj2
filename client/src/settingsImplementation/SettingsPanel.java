@@ -11,7 +11,7 @@ public class SettingsPanel extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(CONTENT__BG);
 
-        JLabel label = new JLabel("Settings (Later)");
+        JLabel label = new JLabel("Settings not implemented yet(");
         label.setForeground(Color.white);
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
 

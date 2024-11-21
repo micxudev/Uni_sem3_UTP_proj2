@@ -4,6 +4,8 @@ import mainView.ContentPanel;
 
 import javax.swing.*;
 
+import java.time.LocalDate;
+
 import static managers.ConstManager.FRAME_BORDER_W;
 
 public class ChatsController {
@@ -18,7 +20,7 @@ public class ChatsController {
         this.contentPanel = contentPanel;
         this.chatsListPanel = chatsListPanel;
 
-        addNewChat("/resources/icons/socket128x128.png", "Server Chat", "26/09/2024");
+        addNewChat("/resources/icons/socket128x128.png", "Server Chat", String.valueOf(LocalDate.now()));
     }
 
     public static boolean isChatOpen() {

@@ -10,7 +10,7 @@ import static managers.ConstManager.FRAME_MIN_SIZE;
 
 public class Frame extends JFrame {
     public Frame() {
-        super("Socket");
+        super("Aka Telegram");
         KeyEventManager.setupGlobalKeyEvents(this);
         setVisible(true);
     }
