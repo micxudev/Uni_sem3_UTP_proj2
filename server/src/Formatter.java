@@ -60,10 +60,10 @@ public class Formatter {
     /**
      * TYPE_SHUTDOWN
      * shutdown - send a message that server goes down
-     * type: shutdown\n
+     * type: shutdown
     */
     public static String getShutdownFormatted() {
-        return "type: shutdown\n";
+        return "type: shutdown";
     }
 
 
