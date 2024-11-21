@@ -11,7 +11,7 @@ public class Formatter {
     */
     public static String getConnectionFormatted(CONNECTION_ACTION action, String username) {
         return "type: connection\n" +
-                action.toString() +
+                "action: " + action + "\n" +
                 "username: " + username;
     }
 
@@ -111,8 +111,8 @@ public class Formatter {
 }
 
 enum CONNECTION_ACTION {
-    ADDED   ("action: added\n"),
-    REMOVED ("action: removed\n");
+    ADDED   ("added"),
+    REMOVED ("removed");
     private final String action;
     CONNECTION_ACTION(String action) {
         this.action = action;
