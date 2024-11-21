@@ -106,29 +106,10 @@ public class Formatter {
                 "username: " + username + "\n" +
                 "usage:\n" +
                 "message - send a message to every other connected client\n" +
-                "/msg <username> message - send a message to a specific person\n" +
-                "/msg <username1>, <username2>, <username3> message - send a message to multiple specific people\n" +
-                "/msg NOT <username1>, <username2>, <username3> message - send a message to everyone, with exception to some people";
+                "/msg <username> : message - send a message to a specific person\n" +
+                "/msg <username1> <username2> <username3> : message - send a message to multiple specific people\n" +
+                "/msg NOT <username1> <username2> <username3> : message - send a message to everyone, with exception to some people";
     }
-
-
-    /*
-    CLIENT -> SERVER:
-    can send:
-        1. request for banned phrases list
-        2. message + recipients
-
-    case: !banned
-        send a list for banned phrases
-
-    case: message
-        message line 1\n
-        message line 2\n
-        message line 3\n
-        message last line\n
-        \0\0\n
-        user1 user2 user3
-    */
 }
 
 enum CONNECTION_ACTION {

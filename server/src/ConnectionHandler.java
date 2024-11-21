@@ -70,17 +70,19 @@ public class ConnectionHandler implements Runnable {
                     continue;
                 }
 
-                // split read message into 2 parts according to the formatter
-                // messageParts[0] - message itself
-                // messageParts[1] - recipients (separated by space)
-                String[] messageParts = messageRead.split("\0\0\n");
-                if (messageParts.length != 2) {
-                    throw new IllegalArgumentException("sent invalid message format");
+                // split read message into 2 parts
+                try {
+                    String[] messageParts = server.parseReceivedMessage(username, messageRead);
+                    String message = messageParts[0];
+                    String recipientsStr = messageParts[1];
+                    ArrayList<String> recipientsList = new ArrayList<>(List.of(recipientsStr.split("\\s+")));
+
+                    // attempt to send the message to specified users
+                    server.attemptToShareMessageWith(this, message, recipientsList);
+                } catch (IllegalArgumentException e) {
+                    sendMessage(e.getMessage());
                 }
 
-                // attempt to send the message to specified users
-                String[] recipients = messageParts[1].split(" ");
-                server.attemptToShareMessageWith(this, messageParts[0], new ArrayList<>(List.of(recipients)));
             }
         } catch (IllegalArgumentException e) {
             logger.info(logUsername + "disconnected with IllegalArg: " + e.getMessage());

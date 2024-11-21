@@ -2,11 +2,13 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Server implements Runnable {
     private final ServerSocket serverSocket;
@@ -93,6 +95,56 @@ public class Server implements Runnable {
         return bannedPhrases.stream()
             .map(phrase -> Pattern.compile("\\b" + Pattern.quote(phrase) + "\\b", Pattern.CASE_INSENSITIVE))
             .toList();
+    }
+
+    public String[] parseReceivedMessage(String senderUsername, String input) throws IllegalArgumentException {
+        String[] result = new String[2]; // [message, recipients]
+
+        // default behaviour (only message):
+        // "message" - send to every other connected client (except sender)
+        if (!input.startsWith("/msg ")) {
+            result[0] = input.trim();
+            result[1] = activeUsers.keySet().stream()
+                .filter(username -> !username.equals(senderUsername))
+                .collect(Collectors.joining(" "));
+            return result;
+        }
+
+        // message to specific users:
+        input = input.substring(5).trim(); // removes '/msg ' part (and possibly spaces)
+
+        if (input.startsWith("NOT ")) {
+            // message to everyone with exception to some people:
+            // "/msg NOT <username1> <username2> <username3> : message"
+            input = input.substring(4).trim(); // removes 'NOT ' part (and possibly spaces)
+
+            String[] messageAndUsers = splitInputIntoMessageAndUsers(input);
+            HashSet<String> excludedUsers = new HashSet<>(List.of(messageAndUsers[1].split(" ")));
+
+            // filter out sender and excluded recipients
+            result[0] = senderUsername + " whispers to you: " + messageAndUsers[0];
+            result[1] = activeUsers.keySet().stream()
+                .filter(username -> !username.equals(senderUsername) && !excludedUsers.contains(username))
+                .collect(Collectors.joining(" "));
+        } else {
+            // "/msg <username> : message"                          - send a message to a specific person
+            // "/msg <username1> <username2> <username3> : message" - send a message to multiple specific people
+            String[] messageAndUsers = splitInputIntoMessageAndUsers(input);
+            result[0] = senderUsername + " whispers to you: " + messageAndUsers[0];
+            result[1] = messageAndUsers[1];
+        }
+        return result;
+    }
+
+    private String[] splitInputIntoMessageAndUsers(String input) throws IllegalArgumentException {
+        String[] result = new String[2];
+        int colonInd = input.indexOf(':');
+        if (colonInd == -1) {
+            throw new IllegalArgumentException("SERVER: Invalid message format");
+        }
+        result[0] = input.substring(colonInd + 1).trim();
+        result[1] = input.substring(0, colonInd).trim();
+        return result;
     }
 
     public void attemptToShareMessageWith(ConnectionHandler sender, String message, ArrayList<String> recipients) {
