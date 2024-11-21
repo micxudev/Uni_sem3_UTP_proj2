@@ -130,7 +130,7 @@ public class Server implements Runnable {
             // "/msg <username> : message"                          - send a message to a specific person
             // "/msg <username1> <username2> <username3> : message" - send a message to multiple specific people
             String[] messageAndUsers = splitInputIntoMessageAndUsers(input);
-            result[0] = senderUsername + " says to group and you: " + messageAndUsers[0];
+            result[0] = senderUsername + " whispers to you: " + messageAndUsers[0];
             result[1] = messageAndUsers[1];
         }
         return result;
