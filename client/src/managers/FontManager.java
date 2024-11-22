@@ -14,7 +14,7 @@ public class FontManager {
     public static final Font CHAT__DATE               = new Font("Arial", Font.PLAIN, 14);
 
     public static final Font OPENCHAT__BUTTON         = new Font("Arial", Font.BOLD, 14);
-    public static final Font OPENCHAT__MESSAGE        = new Font("Arial", Font.PLAIN, 16);
+    public static final Font OPENCHAT__MESSAGE        = new Font("Arial", Font.PLAIN, 13);
 
     public static final Font SOUTHPANEL__BUTTON       = new Font("Arial", Font.BOLD, 10);
 

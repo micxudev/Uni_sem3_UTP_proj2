@@ -1,7 +1,6 @@
 package chatImplementation;
 
 import javax.swing.*;
-
 import java.awt.*;
 
 import static managers.ColorManager.*;
@@ -21,6 +20,7 @@ public class ChatMessageComponent extends JPanel {
                 setText(message);
                 setBackground(MESSAGE__SENT__BG);
                 setForeground(MESSAGE__SENT__FG);
+                setSelectionColor(OPENCHAT__MESSAGE_TEXT_SELECTED);
                 setCaretColor(MESSAGE__SENT__FG);
                 setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
                 setFont(OPENCHAT__MESSAGE);

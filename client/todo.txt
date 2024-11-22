@@ -1,0 +1,12 @@
+Add support commands:
+/online
+Online (5): user1, user2, user3, user4, user5
+
+Fix:
+1. OpenChat before connection
+
+2. Message format for many receivers:
+user1: message line1
+message line2
+message line3
+[receivers: user2, user3]

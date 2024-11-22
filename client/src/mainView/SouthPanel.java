@@ -11,7 +11,8 @@ import java.util.Objects;
 
 import static managers.ColorManager.SOUTH__BUTTON__BG__SELECTED;
 import static managers.ColorManager.SOUTH__BUTTON__FG;
-import static managers.ConstManager.*;
+import static managers.ConstManager.FRAME_INSET_W;
+import static managers.ConstManager.NORTH_SOUTH_PANEL_SIZE;
 import static managers.FontManager.SOUTHPANEL__BUTTON;
 
 public class SouthPanel extends JPanel {

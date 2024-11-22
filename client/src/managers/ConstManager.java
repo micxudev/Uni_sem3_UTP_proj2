@@ -2,7 +2,8 @@ package managers;
 
 import java.awt.*;
 
-import static managers.SystemInfoManager.*;
+import static managers.SystemInfoManager.IS_MAC;
+import static managers.SystemInfoManager.MODIFIER_KEY;
 
 public class ConstManager {
     /*--------------- FRAME ---------------*/

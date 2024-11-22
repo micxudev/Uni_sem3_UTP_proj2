@@ -50,20 +50,22 @@ public class ColorManager {
     public static Color CHAT__DATE_FG                   = new Color(150,150,160);
 
     /*--------------- OPENCHAT ---------------*/
-    public static Color OPENCHAT__BORDER                 = new Color(10,18,27);
-    public static Color OPENCHAT__MESSAGE_TEXT           = new Color(238,238,238);
-    public static Color OPENCHAT__MESSAGE_TEXT_NO_FOCUS  = new Color(120,120,120);
-    public static Color OPENCHAT__BUTTON__FG             = new Color(40, 140, 200);
-    public static Color OPENCHAT__BUTTON__FG__OVER       = new Color(50,170,255);
-    public static Color OPENCHAT__BUTTON__BG__PRESSED    = new Color(255,255,255,25);
+    public static Color OPENCHAT__BORDER                = new Color(10,18,27);
+    public static Color OPENCHAT__MESSAGE_TEXT          = new Color(238,238,238);
+    public static Color OPENCHAT__MESSAGE_TEXT_CARET    = new Color(46,166,255);
+    public static Color OPENCHAT__MESSAGE_TEXT_NO_FOCUS = new Color(120,120,120);
+    public static Color OPENCHAT__BUTTON__FG            = new Color(40,140,200);
+    public static Color OPENCHAT__BUTTON__FG__OVER      = new Color(50,170,255);
+    public static Color OPENCHAT__BUTTON__BG__PRESSED   = new Color(255,255,255,25);
+    public static Color OPENCHAT__MESSAGE_TEXT_SELECTED = new Color(52,90,128);
 
 
     /*--------------- SCROLLBAR ---------------*/
-    public static Color SCROLL__BG = new Color(78, 78, 78);
+    public static Color SCROLL__BG = new Color(78,78,78);
     public static Color SCROLL__FG   = new Color(115,120,120);
 
 
     /*--------------- CHAT MESSAGE SENT ---------------*/
-    public static Color  MESSAGE__SENT__BG = new Color(43,82,120);
+    public static Color  MESSAGE__SENT__BG = new Color(62,106,151);
     public static Color  MESSAGE__SENT__FG = new Color(230,236,242);
 }

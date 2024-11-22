@@ -5,7 +5,8 @@ import mainView.ContentPanel;
 import javax.swing.*;
 import java.awt.*;
 
-import static javax.swing.ScrollPaneConstants.*;
+import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER;
+import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED;
 import static managers.ColorManager.CONTENT__BG;
 import static managers.ConstManager.*;
 

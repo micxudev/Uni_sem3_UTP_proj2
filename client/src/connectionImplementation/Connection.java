@@ -4,7 +4,9 @@ import chatImplementation.ChatComponentOpen;
 import chatImplementation.ChatsController;
 
 import javax.swing.*;
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;

@@ -3,7 +3,6 @@ package chatImplementation;
 import mainView.ContentPanel;
 
 import javax.swing.*;
-
 import java.time.LocalDate;
 import java.util.AbstractMap;
 import java.util.HashMap;

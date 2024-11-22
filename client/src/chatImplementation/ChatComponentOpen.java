@@ -9,10 +9,12 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
 
-import static javax.swing.ScrollPaneConstants.*;
+import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER;
+import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED;
 import static managers.ColorManager.*;
 import static managers.ConstManager.*;
-import static managers.FontManager.*;
+import static managers.FontManager.OPENCHAT__BUTTON;
+import static managers.FontManager.OPENCHAT__MESSAGE;
 
 public class ChatComponentOpen extends JPanel {
     private final ChatsController chatsController;
@@ -173,7 +175,7 @@ public class ChatComponentOpen extends JPanel {
                 setOpaque(false);
                 setFont(OPENCHAT__MESSAGE);
                 setForeground(OPENCHAT__MESSAGE_TEXT_NO_FOCUS);
-                setCaretColor(OPENCHAT__MESSAGE_TEXT);
+                setCaretColor(OPENCHAT__MESSAGE_TEXT_CARET);
                 setMinimumSize(OPENCHAT_TA_MIN_SIZE);
                 int topBotPad = (OPENCHAT_SENDMSG_BUTTON_SIZE.height - getRowHeight()) / 2;
                 setBorder(BorderFactory.createEmptyBorder(topBotPad+1, 10, topBotPad, 10));
@@ -296,9 +298,8 @@ public class ChatComponentOpen extends JPanel {
 
     public void addChatMessageComponent(String message) {
         messagesPanel.add(new ChatMessageComponent(message), gbc);
-        messageTA.setText("");
+        messageTA.setText(OPENCHAT_TA_PLACEHOLDER_TEXT);
         messagesPanel.revalidate();
         SwingUtilities.invokeLater(() -> messagesScroll.getVerticalScrollBar().setValue(Integer.MAX_VALUE));
-        messageTA.requestFocusInWindow();
     }
 }
