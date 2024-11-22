@@ -3,11 +3,14 @@ package chatImplementation;
 import mainView.ContentPanel;
 
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.time.LocalDate;
 import java.util.AbstractMap;
 import java.util.HashMap;
 
 import static managers.ConstManager.FRAME_BORDER_W;
+import static managers.ConstManager.GLOBAL_CHAT_NAME;
 
 public class ChatsController {
     private final ContentPanel contentPanel;
@@ -21,11 +24,8 @@ public class ChatsController {
         this.contentPanel = contentPanel;
         this.chatsListPanel = chatsListPanel;
 
-        addNewChat("/resources/icons/socket128x128.png", "Global Chat", String.valueOf(LocalDate.now()));
-    }
-
-    public static boolean isChatOpen() {
-        return chatOpen;
+        addNewChat("/resources/icons/socket128x128.png", GLOBAL_CHAT_NAME, String.valueOf(LocalDate.now()));
+        SwingUtilities.invokeLater(this::returnToChatsListOnEscape);
     }
 
     public static boolean isChatPressed() {
@@ -48,16 +48,13 @@ public class ChatsController {
     protected void addNewChat(String iconPath, String chatName, String lastMessageDate) {
         ChatComponent comp = new ChatComponent(this, iconPath, chatName, lastMessageDate);
         chatsListPanel.add(comp);
+        chatsStorage.put(chatName, new AbstractMap.SimpleEntry<>(comp, new ChatComponentOpen(this, comp)));
     }
 
     protected void enterChat(ChatComponent comp) {
         contentPanel.getSouthPanel().setVisible(false);
         contentPanel.getHolderPanel().setBorder(BorderFactory.createEmptyBorder(FRAME_BORDER_W,0,0,0));
 
-        if (!chatsStorage.containsKey(comp.getChatName())) {
-            chatsStorage.put(comp.getChatName(),
-            new AbstractMap.SimpleEntry<>(comp, new ChatComponentOpen(this, comp)));
-        }
         AbstractMap.SimpleEntry<ChatComponent, ChatComponentOpen> chatEntry = chatsStorage.get(comp.getChatName());
         contentPanel.setCurrentPanel(chatEntry.getValue());
         chatOpen = true;
@@ -68,6 +65,20 @@ public class ChatsController {
         contentPanel.getHolderPanel().setBorder(BorderFactory.createEmptyBorder(FRAME_BORDER_W,0,FRAME_BORDER_W,0));
         contentPanel.setCurrentPanel(contentPanel.getChatsPanel());
         chatOpen = false;
+    }
+
+    private void returnToChatsListOnEscape() {
+        InputMap inputMap = chatsListPanel.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = chatsListPanel.getRootPane().getActionMap();
+
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "returnToChatsList");
+        actionMap.put("returnToChatsList", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (chatOpen)
+                    returnToChatsList();
+            }
+        });
     }
 
     public static HashMap<String, AbstractMap.SimpleEntry<ChatComponent, ChatComponentOpen>> getChatsStorage() {

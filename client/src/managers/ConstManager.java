@@ -78,6 +78,7 @@ public class ConstManager {
     public static final int       OPENCHAT_SCROLL_WIDTH        = 8;
     public static final int       OPENCHAT_MAX_MESSAGE_WIDTH   = FRAME_CONTENT_MIN_W - 2*FRAME_INSET_W - OPENCHAT_MESSAGE_RIGHT_INSET - OPENCHAT_SCROLL_WIDTH;
 
+    public static final String    GLOBAL_CHAT_NAME             = "Global Chat";
 
     /*--------------- SETTINGSPANEl ---------------*/
 }

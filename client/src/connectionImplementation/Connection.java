@@ -14,10 +14,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static connectionImplementation.ConnectionStatus.*;
+import static managers.ConstManager.GLOBAL_CHAT_NAME;
 
 public class Connection {
     private static final ConnectionController connectionController = ConnectionPanel.getConnectionController();
-    private static final ChatComponentOpen globalChatOpen = ChatsController.getChatsStorage().get("Global Chat").getValue();
+    private static final ChatComponentOpen globalChatOpen = ChatsController.getChatsStorage().get(GLOBAL_CHAT_NAME).getValue();
     private static Socket socket;
     private static String username;
     private static BlockingQueue<String> messagesQueue;
@@ -72,14 +73,13 @@ public class Connection {
                 try {
                     if (passedUsernameValidation) {
                         String message = messagesQueue.take();
-                        System.out.println(message);
                         SwingUtilities.invokeLater(() -> globalChatOpen.addReceivedChatMessageComponent(message));
                     } else {
-                        // do nothing until client passes username validation
+                        // wait until client passes username validation (dumb, but... works)
                         Thread.sleep(1500);
                     }
                 } catch (InterruptedException e) {
-                    break;
+                    break; // readThread terminated and workerThread was notified
                 }
             }
         });
