@@ -174,8 +174,10 @@ public class ChatComponentOpen extends JPanel {
                 setWrapStyleWord(true);
                 setOpaque(false);
                 setFont(OPENCHAT__MESSAGE);
-                setForeground(OPENCHAT__MESSAGE_TEXT_NO_FOCUS);
-                setCaretColor(OPENCHAT__MESSAGE_TEXT_CARET);
+                setForeground(OPENCHAT__TA_TEXT_NO_FOCUS);
+                setSelectionColor(OPENCHAT__TA_TEXT_SELECTION);
+                setSelectedTextColor(OPENCHAT__MESSAGE_TEXT);
+                setCaretColor(OPENCHAT__TA_CARET);
                 setMinimumSize(OPENCHAT_TA_MIN_SIZE);
                 int topBotPad = (OPENCHAT_SENDMSG_BUTTON_SIZE.height - getRowHeight()) / 2;
                 setBorder(BorderFactory.createEmptyBorder(topBotPad+1, 10, topBotPad, 10));
@@ -192,7 +194,7 @@ public class ChatComponentOpen extends JPanel {
                     public void focusLost(FocusEvent e) {
                         if (getText().isEmpty()) {
                             setText(OPENCHAT_TA_PLACEHOLDER_TEXT);
-                            setForeground(OPENCHAT__MESSAGE_TEXT_NO_FOCUS);
+                            setForeground(OPENCHAT__TA_TEXT_NO_FOCUS);
                         }
                     }
                 });
