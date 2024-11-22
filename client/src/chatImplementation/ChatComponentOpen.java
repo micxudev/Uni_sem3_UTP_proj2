@@ -286,12 +286,19 @@ public class ChatComponentOpen extends JPanel {
             Connection.sendMessage(message);
 
             messagesPanel.add(new ChatMessageComponent(message), gbc);
-
             messageTA.setText("");
             messagesPanel.revalidate();
             SwingUtilities.invokeLater(() -> messagesScroll.getVerticalScrollBar().setValue(Integer.MAX_VALUE));
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error sending a message to the server:\n" + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    public void addChatMessageComponent(String message) {
+        messagesPanel.add(new ChatMessageComponent(message), gbc);
+        messageTA.setText("");
+        messagesPanel.revalidate();
+        SwingUtilities.invokeLater(() -> messagesScroll.getVerticalScrollBar().setValue(Integer.MAX_VALUE));
+        messageTA.requestFocusInWindow();
     }
 }

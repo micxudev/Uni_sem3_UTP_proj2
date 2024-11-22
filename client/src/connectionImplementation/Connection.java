@@ -1,5 +1,8 @@
 package connectionImplementation;
 
+import chatImplementation.ChatComponentOpen;
+import chatImplementation.ChatsController;
+
 import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
@@ -12,6 +15,7 @@ import static connectionImplementation.ConnectionStatus.*;
 
 public class Connection {
     private static final ConnectionController connectionController = ConnectionPanel.getConnectionController();
+    private static final ChatComponentOpen globalChatOpen = ChatsController.getChatsStorage().get("Global Chat").getValue();
     private static Socket socket;
     private static String username;
     private static BlockingQueue<String> messagesQueue;
@@ -67,7 +71,7 @@ public class Connection {
                     if (passedUsernameValidation) {
                         String message = messagesQueue.take();
                         System.out.println(message);
-                        // add into chat...
+                        SwingUtilities.invokeLater(() -> globalChatOpen.addChatMessageComponent(message));
                     } else {
                         // do nothing until client passes username validation
                         Thread.sleep(2000);
