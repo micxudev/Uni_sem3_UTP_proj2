@@ -1,6 +1,7 @@
-Client:
-Important - 1. OpenChat before connection
+Client FIX:
+1. OpenChat before connection not to get null pointer
+2. Clear the chat on new connection (after new connection established, create a new OpenChat)
+3. Add client username to North panel
 
-2. Connect button click on enter in username field
-3. Dd not lose focus in TA on message sent
-4. Decide when to clear the chat
+Server fix:
+1. Send a message to a client, when some users were not found

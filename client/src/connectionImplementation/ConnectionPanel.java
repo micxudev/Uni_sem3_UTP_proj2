@@ -31,6 +31,7 @@ public class ConnectionPanel extends JPanel {
         JButton connectButton = createConnectButton();
         connectionController = new ConnectionController(ipTextField, portTextField, usernameTextField, statusLabel, connectButton, northServerIp, northConnectionStatus);
         connectButton.addActionListener(_ -> connectionController.buttonClick());
+        usernameTextField.addActionListener(_ -> connectionController.buttonClick());
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = gbc.gridy = 0;

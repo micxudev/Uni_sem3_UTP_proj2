@@ -310,8 +310,13 @@ public class ChatComponentOpen extends JPanel {
     private void addChatMessageComponent(String message, GridBagConstraints gbc, Color bg, Color textSelection) {
         messagesPanel.add(new ChatMessageComponent(message, bg, textSelection), gbc);
         messagesPanel.revalidate();
-        messageTA.setText(OPENCHAT_TA_PLACEHOLDER_TEXT);
-        messageTA.requestFocusInWindow();
-        SwingUtilities.invokeLater(() -> messagesScroll.getVerticalScrollBar().setValue(Integer.MAX_VALUE));
+        if (messageTA.isFocusOwner()) {
+            messageTA.setText("");
+        } else {
+            messageTA.setText(OPENCHAT_TA_PLACEHOLDER_TEXT);
+        }
+        SwingUtilities.invokeLater(() -> {
+            messagesScroll.getVerticalScrollBar().setValue(Integer.MAX_VALUE);
+        });
     }
 }
