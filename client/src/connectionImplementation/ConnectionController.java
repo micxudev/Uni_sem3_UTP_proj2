@@ -166,7 +166,7 @@ public class ConnectionController {
 
     private void setStatusText(String text) {
         statusLabel.setText(text);
-        northConnectionStatus.setText(text);
+        northConnectionStatus.setText(text + " / " + usernameTextField.getText());
     }
 
     private void setUnknownError() {
