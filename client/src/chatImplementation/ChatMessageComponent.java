@@ -3,7 +3,7 @@ package chatImplementation;
 import javax.swing.*;
 import java.awt.*;
 
-import static managers.ColorManager.*;
+import static managers.ColorManager.MESSAGE__SENT__FG;
 import static managers.ConstManager.OPENCHAT_MAX_MESSAGE_WIDTH;
 import static managers.FontManager.OPENCHAT__MESSAGE;
 

@@ -1,9 +1,6 @@
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.stream.Collectors;
 
 public class Main {
     private static DataInputStream in;
