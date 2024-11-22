@@ -73,10 +73,10 @@ public class Connection {
                     if (passedUsernameValidation) {
                         String message = messagesQueue.take();
                         System.out.println(message);
-                        SwingUtilities.invokeLater(() -> globalChatOpen.addChatMessageComponent(message));
+                        SwingUtilities.invokeLater(() -> globalChatOpen.addReceivedChatMessageComponent(message));
                     } else {
                         // do nothing until client passes username validation
-                        Thread.sleep(2000);
+                        Thread.sleep(1500);
                     }
                 } catch (InterruptedException e) {
                     break;

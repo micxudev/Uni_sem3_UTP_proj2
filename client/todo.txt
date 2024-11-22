@@ -1,12 +1,6 @@
-Add support commands:
-/online
-Online (5): user1, user2, user3, user4, user5
+Client:
+Important - 1. OpenChat before connection
 
-Fix:
-1. OpenChat before connection
-
-2. Message format for many receivers:
-user1: message line1
-message line2
-message line3
-[receivers: user2, user3]
+2. Connect button click on enter in username field
+3. Dd not lose focus in TA on message sent
+4. Decide when to clear the chat

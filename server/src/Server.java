@@ -103,7 +103,7 @@ public class Server implements Runnable {
         // default behaviour (only message):
         // "message" - send to every other connected client (except sender)
         if (!input.startsWith(Formatter.COMMAND_MSG)) {
-            result[0] = senderUsername + ":" + input.trim();
+            result[0] = senderUsername + ": " + input.trim();
             result[1] = activeUsers.keySet().stream()
                 .filter(username -> !username.equals(senderUsername))
                 .collect(Collectors.joining(" "));

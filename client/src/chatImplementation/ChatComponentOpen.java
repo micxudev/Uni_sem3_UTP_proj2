@@ -23,7 +23,8 @@ public class ChatComponentOpen extends JPanel {
     private JButton sendMessageButton;
     private final JPanel messagesPanel;
     private final JScrollPane messagesScroll;
-    private final GridBagConstraints gbc;
+    private final GridBagConstraints gbcSent;
+    private final GridBagConstraints gbcReceived;
 
     public ChatComponentOpen(ChatsController chatsController, ChatComponent chatComponent) {
         this.chatsController = chatsController;
@@ -32,7 +33,8 @@ public class ChatComponentOpen extends JPanel {
         setBackground(CONTENT__BG);
 
         JPanel holderPanel = createCentralHolderPanel();
-        gbc = createGBC();
+        gbcSent = createGBC(GridBagConstraints.LINE_END);
+        gbcReceived = createGBC(GridBagConstraints.LINE_START);
 
         messagesPanel = new JPanel(new GridBagLayout());
         messagesPanel.setBackground(CONTENT__BG);
@@ -141,12 +143,12 @@ public class ChatComponentOpen extends JPanel {
         return scrollPane;
     }
 
-    private GridBagConstraints createGBC() {
+    private GridBagConstraints createGBC(int anchor0) {
         return new GridBagConstraints() {
             {
                 gridx = 0;
                 gridy = GridBagConstraints.RELATIVE;
-                anchor = GridBagConstraints.LINE_END;
+                anchor = anchor0;
                 weightx = 1.0;
                 insets = new Insets(0,0,2,OPENCHAT_MESSAGE_RIGHT_INSET);
             }
@@ -176,7 +178,7 @@ public class ChatComponentOpen extends JPanel {
                 setFont(OPENCHAT__MESSAGE);
                 setForeground(OPENCHAT__TA_TEXT_NO_FOCUS);
                 setSelectionColor(OPENCHAT__TA_TEXT_SELECTION);
-                setSelectedTextColor(OPENCHAT__MESSAGE_TEXT);
+                setSelectedTextColor(OPENCHAT__TA_TEXT);
                 setCaretColor(OPENCHAT__TA_CARET);
                 setMinimumSize(OPENCHAT_TA_MIN_SIZE);
                 int topBotPad = (OPENCHAT_SENDMSG_BUTTON_SIZE.height - getRowHeight()) / 2;
@@ -187,7 +189,7 @@ public class ChatComponentOpen extends JPanel {
                     public void focusGained(FocusEvent e) {
                         if (getText().equals(OPENCHAT_TA_PLACEHOLDER_TEXT)) {
                             setText("");
-                            setForeground(OPENCHAT__MESSAGE_TEXT);
+                            setForeground(OPENCHAT__TA_TEXT);
                         }
                     }
                     @Override
@@ -289,19 +291,27 @@ public class ChatComponentOpen extends JPanel {
             String message = messageTA.getText().trim();
             Connection.sendMessage(message);
 
-            messagesPanel.add(new ChatMessageComponent(message), gbc);
-            messageTA.setText("");
-            messagesPanel.revalidate();
-            SwingUtilities.invokeLater(() -> messagesScroll.getVerticalScrollBar().setValue(Integer.MAX_VALUE));
+            addSentChatMessageComponent(message);
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error sending a message to the server:\n" + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    public void addChatMessageComponent(String message) {
-        messagesPanel.add(new ChatMessageComponent(message), gbc);
-        messageTA.setText(OPENCHAT_TA_PLACEHOLDER_TEXT);
+    // received by client
+    public void addReceivedChatMessageComponent(String message) {
+        addChatMessageComponent(message, gbcReceived, MESSAGE__RECEIVED__BG, MESSAGE__RECEIVED_TEXT_SELECTED);
+    }
+
+    // sent by client
+    private void addSentChatMessageComponent(String message) {
+        addChatMessageComponent(message, gbcSent, MESSAGE__SENT__BG, MESSAGE__SENT_TEXT_SELECTED);
+    }
+
+    private void addChatMessageComponent(String message, GridBagConstraints gbc, Color bg, Color textSelection) {
+        messagesPanel.add(new ChatMessageComponent(message, bg, textSelection), gbc);
         messagesPanel.revalidate();
+        messageTA.setText(OPENCHAT_TA_PLACEHOLDER_TEXT);
+        messageTA.requestFocusInWindow();
         SwingUtilities.invokeLater(() -> messagesScroll.getVerticalScrollBar().setValue(Integer.MAX_VALUE));
     }
 }

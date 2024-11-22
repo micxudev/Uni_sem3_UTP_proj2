@@ -8,19 +8,19 @@ import static managers.ConstManager.OPENCHAT_MAX_MESSAGE_WIDTH;
 import static managers.FontManager.OPENCHAT__MESSAGE;
 
 public class ChatMessageComponent extends JPanel {
-    public ChatMessageComponent(String message) {
+    public ChatMessageComponent(String message, Color bg, Color textSelection) {
         setLayout(new BorderLayout());
 
-        add(createMessageArea(message), BorderLayout.CENTER);
+        add(createMessageArea(message, bg, textSelection), BorderLayout.CENTER);
     }
 
-    private JTextPane createMessageArea(String message) {
+    private JTextPane createMessageArea(String message, Color bg, Color textSelection) {
         return new JTextPane() {
             {
                 setText(message);
-                setBackground(MESSAGE__SENT__BG);
+                setBackground(bg);
                 setForeground(MESSAGE__SENT__FG);
-                setSelectionColor(OPENCHAT__MESSAGE_TEXT_SELECTED);
+                setSelectionColor(textSelection);
                 setCaretColor(MESSAGE__SENT__FG);
                 setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
                 setFont(OPENCHAT__MESSAGE);
