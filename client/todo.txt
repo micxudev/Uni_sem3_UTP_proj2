@@ -2,6 +2,3 @@ Client FIX:
 1. OpenChat before connection not to get null pointer
 2. Clear the chat on new connection (after new connection established, create a new OpenChat)
 3. Add client username to North panel
-
-Server fix:
-1. Send a message to a client, when some users were not found

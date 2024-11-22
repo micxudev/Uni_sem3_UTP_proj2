@@ -1,5 +1,7 @@
 public class Formatter {
 
+    private static final String PREFIX = "SERVER: ";
+
     // COMMANDS
     public static final String COMMAND_HELP   = "!help";
     public static final String COMMAND_BANNED = "!banned";
@@ -28,11 +30,11 @@ public class Formatter {
     }
 
     public static String getShutdownFormatted(Server server) {
-        return "SERVER: server " + server.getName() + " went offline";
+        return PREFIX + "server " + server.getName() + " went offline";
     }
 
     public static String getBannedPhraseCommandFormatted() {
-        return "Your message contains banned phrases. Use !banned to see all banned phrases";
+        return PREFIX + "your message contains banned phrases. Use !banned to see all banned phrases";
     }
 
     public static String getWelcomeFormatted(String username) {
@@ -51,7 +53,11 @@ public class Formatter {
     }
 
     public static String getInvalidFormatted(String reason) {
-        return "SERVER: " + reason;
+        return PREFIX + reason;
+    }
+
+    public static String getNoUsersFoundFormatted(String missingUsersStr) {
+        return PREFIX + "users not found: " + missingUsersStr;
     }
 }
 

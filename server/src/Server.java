@@ -175,6 +175,8 @@ public class Server implements Runnable {
                 return true;
             }).toList();
         if (!missingUsers.isEmpty()) {
+            String missingUsersStr = String.join(", ", missingUsers);
+            sender.sendMessage(Formatter.getNoUsersFoundFormatted(missingUsersStr));
             logger.warn("No connection handlers found for recipients: " + String.join(", ", missingUsers));
         }
     }

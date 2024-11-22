@@ -76,11 +76,16 @@ public class ConnectionHandler implements Runnable {
                     continue;
                 }
 
-                // split read message into 2 parts
                 try {
+                    // split read message into 2 parts
                     String[] messageParts = server.parseReceivedMessage(username, messageRead);
                     String message = messageParts[0];
                     String recipientsStr = messageParts[1];
+
+                    if (recipientsStr.isBlank()) {
+                        continue;
+                    }
+
                     ArrayList<String> recipientsList = new ArrayList<>(List.of(recipientsStr.split("\\s+")));
 
                     // attempt to send the message to specified users
@@ -88,7 +93,6 @@ public class ConnectionHandler implements Runnable {
                 } catch (IllegalArgumentException e) {
                     sendMessage(Formatter.getInvalidFormatted(e.getMessage()));
                 }
-
             }
         } catch (IllegalArgumentException e) {
             logger.info(logUsername + "disconnected with IllegalArg: " + e.getMessage());
