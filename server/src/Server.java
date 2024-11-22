@@ -65,7 +65,7 @@ public class Server implements Runnable {
         }
         logger.info("Notifying all active connections about server shutdown...");
         activeConnections.keySet().forEach(handler -> {
-            handler.sendMessage(Formatter.getShutdownFormatted());
+            handler.sendMessage(Formatter.getShutdownFormatted(this));
             handler.cleanUpResources();
         });
     }
@@ -102,8 +102,8 @@ public class Server implements Runnable {
 
         // default behaviour (only message):
         // "message" - send to every other connected client (except sender)
-        if (!input.startsWith("/msg ")) {
-            result[0] = senderUsername + " says: " + input.trim();
+        if (!input.startsWith(Formatter.COMMAND_MSG)) {
+            result[0] = senderUsername + ":" + input.trim();
             result[1] = activeUsers.keySet().stream()
                 .filter(username -> !username.equals(senderUsername))
                 .collect(Collectors.joining(" "));
@@ -113,7 +113,7 @@ public class Server implements Runnable {
         // message to specific users:
         input = input.substring(5).trim(); // removes '/msg ' part (and possibly spaces)
 
-        if (input.startsWith("NOT ")) {
+        if (input.startsWith(Formatter.COMMAND_EXCEPT)) {
             // message to everyone with exception to some people:
             // "/msg NOT <username1> <username2> <username3> : message"
             input = input.substring(4).trim(); // removes 'NOT ' part (and possibly spaces)
@@ -122,7 +122,7 @@ public class Server implements Runnable {
             HashSet<String> excludedUsers = new HashSet<>(List.of(messageAndUsers[1].split(" ")));
 
             // filter out sender and excluded recipients
-            result[0] = senderUsername + " whispers to you: " + messageAndUsers[0];
+            result[0] = senderUsername + " whispers: " + messageAndUsers[0];
             result[1] = activeUsers.keySet().stream()
                 .filter(username -> !username.equals(senderUsername) && !excludedUsers.contains(username))
                 .collect(Collectors.joining(" "));
@@ -130,7 +130,7 @@ public class Server implements Runnable {
             // "/msg <username> : message"                          - send a message to a specific person
             // "/msg <username1> <username2> <username3> : message" - send a message to multiple specific people
             String[] messageAndUsers = splitInputIntoMessageAndUsers(input);
-            result[0] = senderUsername + " whispers to you: " + messageAndUsers[0];
+            result[0] = senderUsername + " whispers: " + messageAndUsers[0];
             result[1] = messageAndUsers[1];
         }
         return result;
@@ -217,8 +217,15 @@ public class Server implements Runnable {
         return bannedPhrasesStr;
     }
 
-    public String getActiveUsersStr() {
-        return String.join(" ", activeUsers.keySet());
+    public String getName() {
+        return name;
+    }
+
+    public String getOnlineUsersStr() {
+        if (activeUsers.isEmpty()) {
+            return "Online (0)";
+        }
+        return "Online ("+activeUsers.size()+"): " + String.join(" ", activeUsers.keySet());
     }
 
     public void addConnectionToActive(ConnectionHandler handler) {

@@ -55,7 +55,7 @@ public class ConnectionHandler implements Runnable {
             sendMessage(Formatter.getHelpFormatted());
 
             // send all active users
-            sendMessage(Formatter.getActiveUsersFormatted(server));
+            sendMessage(Formatter.getOnlineUsersFormatted(server));
 
             // add as active user
             server.addUserToActive(username, this);
@@ -65,13 +65,14 @@ public class ConnectionHandler implements Runnable {
                 int size = readMessageSize();
                 String messageRead = readMessageOfSize(size);
 
-                if (messageRead.trim().equals("!help")) {
-                    sendMessage(Formatter.getHelpFormatted());
-                    continue;
-                }
-
-                if (messageRead.trim().equals("!banned")) {
-                    sendMessage(Formatter.getBannedPhrasesFormatted(server));
+                // check for commands
+                if (messageRead.startsWith("!")) {
+                    switch (messageRead.trim()) {
+                        case Formatter.COMMAND_HELP   -> sendMessage(Formatter.getHelpFormatted());
+                        case Formatter.COMMAND_BANNED -> sendMessage(Formatter.getBannedPhrasesFormatted(server));
+                        case Formatter.COMMAND_ONLINE -> sendMessage(Formatter.getOnlineUsersFormatted(server));
+                        default ->  sendMessage(Formatter.getInvalidFormatted(Formatter.COMMAND_UNKNOWN));
+                    }
                     continue;
                 }
 
