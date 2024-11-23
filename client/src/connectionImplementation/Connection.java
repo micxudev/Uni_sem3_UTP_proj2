@@ -19,11 +19,14 @@ import static managers.ConstManager.GLOBAL_CHAT_NAME;
 public class Connection {
     private static final ConnectionController connectionController = ConnectionPanel.getConnectionController();
     private static final ChatComponent globalChat = ChatsController.getChatsStorage().get(GLOBAL_CHAT_NAME);
+
     private static Socket socket;
     private static String username;
     private static BlockingQueue<String> messagesQueue;
+
     private static boolean isClosedManually;
     private static boolean passedUsernameValidation;
+
     private static DataInputStream in;
     private static DataOutputStream out;
     private static Thread workerThread;
@@ -34,16 +37,19 @@ public class Connection {
         socket = newSocket;
         username = newUsername;
         messagesQueue = new LinkedBlockingQueue<>();
-        passedUsernameValidation = false;
+
         isClosedManually = false;
+        passedUsernameValidation = false;
+
         try {
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
             startReadThread();
-            startWorkerThread();
+            createWorkerThread();
         } catch (IOException _) {
             return IO_EXCEPTION;
         }
+
         return getConnectionStatusAfterUsernameValidation();
     }
 
@@ -67,23 +73,17 @@ public class Connection {
         }).start();
     }
 
-    private static void startWorkerThread() {
+    private static void createWorkerThread() {
         workerThread = new Thread(() -> {
             while (true) {
                 try {
-                    if (passedUsernameValidation) {
-                        String message = messagesQueue.take();
-                        SwingUtilities.invokeLater(() -> globalChat.getChatCompOpen().addReceivedChatMessageComponent(message));
-                    } else {
-                        // wait until client passes username validation (dumb, but... works)
-                        Thread.sleep(1500);
-                    }
+                    String message = messagesQueue.take();
+                    SwingUtilities.invokeLater(() -> globalChat.getChatCompOpen().addReceivedChatMessageComponent(message));
                 } catch (InterruptedException e) {
                     break; // readThread terminated and workerThread was notified
                 }
             }
         });
-        workerThread.start();
     }
 
     // username validation
@@ -98,7 +98,9 @@ public class Connection {
                         case "invalid" -> USERNAME_INVALID;
                         case "taken" -> USERNAME_TAKEN;
                         case "passed" -> {
-                            globalChat.createChatCompOpen();
+                            // once username validation is passed:
+                            globalChat.createChatCompOpen(); // 1. Clear previous chat history
+                            workerThread.start(); // 2. Start workerThread
                             passedUsernameValidation = true;
                             yield CONNECTED;
                         }
