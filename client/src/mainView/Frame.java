@@ -6,6 +6,7 @@ import javax.swing.*;
 import java.awt.*;
 
 import static managers.ColorManager.CONTENT__BG;
+import static managers.ColorManager.TC_SELECTION__BG_NO_FOCUS;
 import static managers.ConstManager.FRAME_MIN_SIZE;
 
 public class Frame extends JFrame {
@@ -13,6 +14,7 @@ public class Frame extends JFrame {
         super("Aka Telegram");
         KeyEventManager.setupGlobalKeyEvents(this);
         setVisible(true);
+        UIManager.put("TextComponent.selectionBackgroundInactive", TC_SELECTION__BG_NO_FOCUS);
     }
 
     @Override

@@ -3,8 +3,11 @@ package managers;
 import java.awt.*;
 
 public class ColorManager {
+    /*--------------- DEFAULTS ---------------*/
+    public static Color TC_SELECTION__BG_NO_FOCUS = new Color(170,170,170); // TextComponent.selectionBackgroundInactive
+
     /*--------------- MAINVIEW ---------------*/
-    public static Color MAINVIEW__BORDER = new Color(60, 60, 60);
+    public static Color MAINVIEW__BORDER = new Color(60,60,60);
 
 
     /*--------------- TITLEBAR ---------------*/
