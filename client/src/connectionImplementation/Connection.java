@@ -1,6 +1,6 @@
 package connectionImplementation;
 
-import chatImplementation.ChatComponentOpen;
+import chatImplementation.ChatComponent;
 import chatImplementation.ChatsController;
 
 import javax.swing.*;
@@ -18,7 +18,7 @@ import static managers.ConstManager.GLOBAL_CHAT_NAME;
 
 public class Connection {
     private static final ConnectionController connectionController = ConnectionPanel.getConnectionController();
-    private static final ChatComponentOpen globalChatOpen = ChatsController.getChatsStorage().get(GLOBAL_CHAT_NAME).getValue();
+    private static final ChatComponent globalChat = ChatsController.getChatsStorage().get(GLOBAL_CHAT_NAME);
     private static Socket socket;
     private static String username;
     private static BlockingQueue<String> messagesQueue;
@@ -73,7 +73,7 @@ public class Connection {
                 try {
                     if (passedUsernameValidation) {
                         String message = messagesQueue.take();
-                        SwingUtilities.invokeLater(() -> globalChatOpen.addReceivedChatMessageComponent(message));
+                        SwingUtilities.invokeLater(() -> globalChat.getChatCompOpen().addReceivedChatMessageComponent(message));
                     } else {
                         // wait until client passes username validation (dumb, but... works)
                         Thread.sleep(1500);
@@ -98,6 +98,7 @@ public class Connection {
                         case "invalid" -> USERNAME_INVALID;
                         case "taken" -> USERNAME_TAKEN;
                         case "passed" -> {
+                            globalChat.createChatCompOpen();
                             passedUsernameValidation = true;
                             yield CONNECTED;
                         }

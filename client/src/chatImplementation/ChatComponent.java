@@ -14,6 +14,7 @@ import static managers.FontManager.CHAT__DATE;
 
 public class ChatComponent extends JPanel {
     private final ChatsController chatsController;
+    private ChatComponentOpen chatCompOpen;
     private final String chatIconPath;
     private final JLabel chatNameLabel;
 
@@ -130,5 +131,13 @@ public class ChatComponent extends JPanel {
 
     public String getChatName() {
         return chatNameLabel.getText();
+    }
+
+    public void createChatCompOpen() {
+        chatCompOpen = new ChatComponentOpen(chatsController, this);
+    }
+
+    public ChatComponentOpen getChatCompOpen() {
+        return chatCompOpen;
     }
 }

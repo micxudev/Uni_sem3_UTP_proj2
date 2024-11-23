@@ -15,7 +15,7 @@ import static managers.ConstManager.GLOBAL_CHAT_NAME;
 public class ChatsController {
     private final ContentPanel contentPanel;
     private final JPanel chatsListPanel;
-    private static final HashMap<String, AbstractMap.SimpleEntry<ChatComponent, ChatComponentOpen>> chatsStorage = new HashMap<>();
+    private static final HashMap<String, ChatComponent> chatsStorage = new HashMap<>();
     private static ChatComponent lastHoveredChatComp;
     private static boolean chatPressed = false;
     private static boolean chatOpen = false;
@@ -47,16 +47,15 @@ public class ChatsController {
     // Main functions
     protected void addNewChat(String iconPath, String chatName, String lastMessageDate) {
         ChatComponent comp = new ChatComponent(this, iconPath, chatName, lastMessageDate);
+        comp.createChatCompOpen();
         chatsListPanel.add(comp);
-        chatsStorage.put(chatName, new AbstractMap.SimpleEntry<>(comp, new ChatComponentOpen(this, comp)));
+        chatsStorage.put(chatName, comp); // save for access from wherever
     }
 
     protected void enterChat(ChatComponent comp) {
         contentPanel.getSouthPanel().setVisible(false);
         contentPanel.getHolderPanel().setBorder(BorderFactory.createEmptyBorder(FRAME_BORDER_W,0,0,0));
-
-        AbstractMap.SimpleEntry<ChatComponent, ChatComponentOpen> chatEntry = chatsStorage.get(comp.getChatName());
-        contentPanel.setCurrentPanel(chatEntry.getValue());
+        contentPanel.setCurrentPanel(comp.getChatCompOpen());
         chatOpen = true;
     }
 
@@ -75,13 +74,14 @@ public class ChatsController {
         actionMap.put("returnToChatsList", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (chatOpen)
+                if (chatOpen) {
                     returnToChatsList();
+                }
             }
         });
     }
 
-    public static HashMap<String, AbstractMap.SimpleEntry<ChatComponent, ChatComponentOpen>> getChatsStorage() {
+    public static HashMap<String, ChatComponent> getChatsStorage() {
         return chatsStorage;
     }
 }
